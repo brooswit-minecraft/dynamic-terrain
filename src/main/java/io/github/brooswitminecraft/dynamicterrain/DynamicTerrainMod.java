@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -25,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -63,6 +65,7 @@ public class DynamicTerrainMod {
     }
 
     public DynamicTerrainMod(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
@@ -91,6 +94,18 @@ public class DynamicTerrainMod {
             }));
         }
         event.getDispatcher().register(root.then(pos));
+
+        // Debug entry point for erode(): /dterode <pos> <amount>. Respects the erosionEnabled config.
+        event.getDispatcher().register(Commands.literal("dterode")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0)).executes(context -> {
+                            BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                            double amount = DoubleArgumentType.getDouble(context, "amount");
+                            Erosion.Result result = Erosion.erode(context.getSource().getLevel(), target, amount);
+                            context.getSource().sendSuccess(() -> Component.literal("erode: " + result), true);
+                            return result == Erosion.Result.MOVED || result == Erosion.Result.DEGRADED ? 1 : 0;
+                        }))));
 
         // Debug entry point for the transition registry: /dttransition <pos> <name>.
         event.getDispatcher().register(Commands.literal("dttransition")

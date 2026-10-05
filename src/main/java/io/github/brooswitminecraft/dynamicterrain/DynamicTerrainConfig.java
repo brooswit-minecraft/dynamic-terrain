@@ -1,0 +1,19 @@
+package io.github.brooswitminecraft.dynamicterrain;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
+
+/** Server config. Terrain-altering systems default to OFF so existing worlds are safe. */
+public final class DynamicTerrainConfig {
+    public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.BooleanValue EROSION_ENABLED;
+
+    static {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        EROSION_ENABLED = builder
+                .comment("Let erode() change terrain. When false, erode() does nothing. Manual tools still work.")
+                .define("erosionEnabled", false);
+        SPEC = builder.build();
+    }
+
+    private DynamicTerrainConfig() {}
+}
