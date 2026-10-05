@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -72,6 +73,7 @@ public class DynamicTerrainMod {
         modEventBus.addListener(this::addCreative);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(WaterErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new TransitionLoader()));
     }
 
@@ -105,6 +107,19 @@ public class DynamicTerrainMod {
                             Erosion.Result result = Erosion.erode(context.getSource().getLevel(), target, amount);
                             context.getSource().sendSuccess(() -> Component.literal("erode: " + result), true);
                             return result == Erosion.Result.MOVED || result == Erosion.Result.DEGRADED ? 1 : 0;
+                        }))));
+
+        // Debug entry point for water erosion: /dtwater <pos> <samples> samples positions around pos once.
+        event.getDispatcher().register(Commands.literal("dtwater")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .then(Commands.argument("samples", IntegerArgumentType.integer(1, 100000)).executes(context -> {
+                            BlockPos center = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                            int samples = IntegerArgumentType.getInteger(context, "samples");
+                            int changed = WaterErosion.sampleAround(context.getSource().getLevel(), center, samples,
+                                    context.getSource().getLevel().getRandom());
+                            context.getSource().sendSuccess(() -> Component.literal("water erosion changed " + changed + " blocks"), true);
+                            return changed;
                         }))));
 
         // Debug entry point for the transition registry: /dttransition <pos> <name>.
