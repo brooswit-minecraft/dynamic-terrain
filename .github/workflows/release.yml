@@ -3,7 +3,9 @@ name: Release
 # On every push to main, release if changelog.d gained a fragment since the
 # last tag. The version is the last tag bumped by the highest `bump:` level
 # among those fragments (see changelog.d/README.md); nothing is committed
-# back to main. Run manually to release what is already on main.
+# back to main. The GitHub release jar is the shipped artifact: Modrinth gets
+# that exact jar, never a rebuild. Run manually to (re)publish the latest
+# tagged release to Modrinth, e.g. after the project was first created.
 on:
   push:
     branches: [main]
@@ -24,8 +26,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compute next version
+      - name: Compute version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           last_tag=$(git tag --list 'v[0-9]*' --sort=-v:refname | head -n1)
           if [ -n "$last_tag" ]; then
@@ -35,19 +39,22 @@ jobs:
             last="0.0.0"
             fragments=$(git ls-files changelog.d | grep -v '/README.md$' | grep '\.md$' || true)
           fi
-          if [ -z "$fragments" ]; then
+          if [ -n "$fragments" ]; then
+            # shellcheck disable=SC2086
+            python3 scripts/next_version.py "$last" $fragments > release-info.txt
+            echo "version=$(head -n1 release-info.txt)" >> "$GITHUB_OUTPUT"
+            echo "new=true" >> "$GITHUB_OUTPUT"
+            tail -n +2 release-info.txt > release-notes.md
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "$last_tag" ]; then
+            echo "version=$last" >> "$GITHUB_OUTPUT"
+            echo "new=false" >> "$GITHUB_OUTPUT"
+            gh release view "$last_tag" --json body --jq .body > release-notes.md
+          else
             echo "No new changelog fragments since ${last_tag:-the start}; nothing to release."
-            exit 0
           fi
-          # shellcheck disable=SC2086
-          python3 scripts/next_version.py "$last" $fragments > release-info.txt
-          version=$(head -n1 release-info.txt)
-          tail -n +2 release-info.txt > release-notes.md
-          echo "Releasing $version"
-          echo "value=$version" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 21
-        if: steps.version.outputs.value
+        if: steps.version.outputs.new == 'true'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -55,16 +62,61 @@ jobs:
           cache: gradle
 
       - name: Build and test
-        if: steps.version.outputs.value
+        if: steps.version.outputs.new == 'true'
         env:
-          VERSION: ${{ steps.version.outputs.value }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: ./gradlew build --no-daemon "-Pmod_version=$VERSION"
 
       - name: Publish GitHub release
-        if: steps.version.outputs.value
+        if: steps.version.outputs.new == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.value }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh release create "v$VERSION" "build/libs/dynamicterrain-$VERSION.jar" \
             --target "$GITHUB_SHA" --title "dynamic-terrain $VERSION" --notes-file release-notes.md
+
+      # Modrinth publishes the exact jar attached to the GitHub release.
+      - name: Fetch release jar
+        if: steps.version.outputs.version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p build/libs
+          gh release download "v$VERSION" --pattern "dynamicterrain-$VERSION.jar" --dir build/libs --clobber
+
+      - uses: oven-sh/setup-bun@v2
+        if: steps.version.outputs.version
+
+      - name: Check existing Modrinth version
+        id: modrinth
+        if: steps.version.outputs.version
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          test -n "$MODRINTH_TOKEN"
+          test -n "$PROJECT_ID"
+          python3 scripts/check-modrinth-version.py >> "$GITHUB_OUTPUT"
+
+      - name: Publish Modrinth version
+        if: steps.version.outputs.version && steps.modrinth.outputs.exists != 'true'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          bunx --bun github:brooswit-minecraft/rinth#v0.10.0 publish "$PROJECT_ID" \
+            --file "build/libs/dynamicterrain-$VERSION.jar" \
+            --version "$VERSION" --changelog-file release-notes.md \
+            --game-version 1.21.1 --loader neoforge --channel alpha
+
+      - name: Sync Modrinth environment
+        if: steps.version.outputs.version
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: python3 scripts/sync-modrinth-settings.py
