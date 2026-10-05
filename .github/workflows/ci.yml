@@ -21,6 +21,9 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Test release scripts
+        run: python3 -m unittest discover -s scripts
+
       - name: Build and test
         run: ./gradlew build --no-daemon
 
