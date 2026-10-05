@@ -33,7 +33,7 @@ public final class Erosion {
         }
         BlockState state = level.getBlockState(pos);
         // 1. Does this block take part in erosion?
-        if (!participates(level, pos, state)) {
+        if (!takesPart(level, pos, state)) {
             return Result.SKIPPED;
         }
         // 2-3. Roll against resistance; failing the roll does nothing.
@@ -56,7 +56,7 @@ public final class Erosion {
     }
 
     /** Layered material, or anything that declares a "damage" transition. */
-    private static boolean participates(Level level, BlockPos pos, BlockState state) {
+    public static boolean takesPart(Level level, BlockPos pos, BlockState state) {
         return state.getBlock() instanceof LayeredBlock
                 || LayeredMaterials.layeredFor(state.getBlock()) != null
                 || Transitions.hasTransition(level, pos, DAMAGE);
