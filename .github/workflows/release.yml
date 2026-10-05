@@ -120,3 +120,18 @@ jobs:
           PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
           VERSION: ${{ steps.version.outputs.version }}
         run: python3 scripts/sync-modrinth-settings.py
+
+      # Draft projects are invisible to unauthenticated readers, so print what a
+      # packwiz pin needs (version id, file URL, hashes) for the job summary.
+      - name: Record Modrinth version
+        if: steps.version.outputs.version
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          curl -fsS -H "Authorization: $MODRINTH_TOKEN" -H "User-Agent: brooswit-minecraft/dynamic-terrain-release" \
+            "https://api.modrinth.com/v2/project/$PROJECT_ID/version" \
+            | jq --arg v "$VERSION" '[.[] | select(.version_number == $v)] | .[0] | {id, project_id, version_number, status, file: .files[0] | {filename, url, hashes}}' \
+            | tee modrinth-version.json
+          { echo "### Modrinth version"; echo '```json'; cat modrinth-version.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
