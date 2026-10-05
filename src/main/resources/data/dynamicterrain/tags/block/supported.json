@@ -12,6 +12,12 @@
     "dynamicterrain:layered_dirt",
     "dynamicterrain:layered_sand",
     "dynamicterrain:layered_gravel",
-    "dynamicterrain:layered_grass"
+    "dynamicterrain:layered_grass",
+    "dynamicterrain:layered_stone",
+    "dynamicterrain:layered_cobblestone",
+    "dynamicterrain:layered_smooth_stone",
+    "dynamicterrain:layered_deepslate",
+    "dynamicterrain:layered_cobbled_deepslate",
+    "minecraft:smooth_stone"
   ]
 }

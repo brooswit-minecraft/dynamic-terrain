@@ -2,5 +2,10 @@
   "block.dynamicterrain.layered_grass": "Layered Grass",
   "block.dynamicterrain.layered_dirt": "Layered Dirt",
   "block.dynamicterrain.layered_sand": "Layered Sand",
-  "block.dynamicterrain.layered_gravel": "Layered Gravel"
+  "block.dynamicterrain.layered_gravel": "Layered Gravel",
+  "block.dynamicterrain.layered_stone": "Layered Stone",
+  "block.dynamicterrain.layered_cobblestone": "Layered Cobblestone",
+  "block.dynamicterrain.layered_smooth_stone": "Layered Smooth Stone",
+  "block.dynamicterrain.layered_deepslate": "Layered Deepslate",
+  "block.dynamicterrain.layered_cobbled_deepslate": "Layered Cobbled Deepslate"
 }

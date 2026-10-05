@@ -15,6 +15,11 @@ MATERIALS = {
     "layered_dirt": ("Layered Dirt", "minecraft:block/dirt", "shovel"),
     "layered_sand": ("Layered Sand", "minecraft:block/sand", "shovel"),
     "layered_gravel": ("Layered Gravel", "minecraft:block/gravel", "shovel"),
+    "layered_stone": ("Layered Stone", "minecraft:block/stone", "pickaxe"),
+    "layered_cobblestone": ("Layered Cobblestone", "minecraft:block/cobblestone", "pickaxe"),
+    "layered_smooth_stone": ("Layered Smooth Stone", "minecraft:block/smooth_stone", "pickaxe"),
+    "layered_deepslate": ("Layered Deepslate", "minecraft:block/deepslate", "pickaxe"),
+    "layered_cobbled_deepslate": ("Layered Cobbled Deepslate", "minecraft:block/cobbled_deepslate", "pickaxe"),
 }
 # Grass-topped materials: floor-anchored layers show a biome-tinted grass top and side overlay over
 # dirt; ceiling-anchored layers hang as plain dirt (grass does not grow downward).
