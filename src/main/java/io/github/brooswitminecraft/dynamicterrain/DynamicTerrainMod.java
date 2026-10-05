@@ -126,6 +126,18 @@ public class DynamicTerrainMod {
                                     return result == Erosion.Result.MOVED || result == Erosion.Result.DEGRADED ? 1 : 0;
                                 })))));
 
+        // Debug entry point for the surface model: /dtsurface <pos> prints what a tire would feel there.
+        event.getDispatcher().register(Commands.literal("dtsurface")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos()).executes(context -> {
+                    BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                    SurfaceProperties s = Surfaces.at(context.getSource().getLevel(), target);
+                    context.getSource().sendSuccess(() -> Component.literal(String.format(
+                            "grip=%.2f roughness=%.2f rollingResistance=%.3f deformability=%.2f", s.grip(), s.roughness(),
+                            s.rollingResistance(), s.deformability())), false);
+                    return 1;
+                })));
+
         // Debug entry point for water erosion: /dtwater <pos> <samples> samples positions around pos once.
         event.getDispatcher().register(Commands.literal("dtwater")
                 .requires(source -> source.hasPermission(2))
