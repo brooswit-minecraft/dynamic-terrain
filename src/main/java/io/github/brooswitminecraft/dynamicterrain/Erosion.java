@@ -16,6 +16,9 @@ import net.minecraft.world.level.block.state.BlockState;
  * alone decides whether it changes.
  */
 public final class Erosion {
+    /** The transition applied when material cannot move. */
+    public static final String DAMAGE = "damage";
+
     private Erosion() {}
 
     public enum Result { DISABLED, SKIPPED, RESISTED, MOVED, DEGRADED, STABLE }
@@ -30,7 +33,7 @@ public final class Erosion {
         }
         BlockState state = level.getBlockState(pos);
         // 1. Does this block take part in erosion?
-        if (!participates(state)) {
+        if (!participates(level, pos, state)) {
             return Result.SKIPPED;
         }
         // 2-3. Roll against resistance; failing the roll does nothing.
@@ -49,11 +52,14 @@ public final class Erosion {
             }
         }
         // 5. Material cannot move: degrade through the data-driven "damage" transition.
-        return Transitions.applyTransition(level, pos, "damage") ? Result.DEGRADED : Result.STABLE;
+        return Transitions.applyTransition(level, pos, DAMAGE) ? Result.DEGRADED : Result.STABLE;
     }
 
-    private static boolean participates(BlockState state) {
-        return state.getBlock() instanceof LayeredBlock || LayeredMaterials.layeredFor(state.getBlock()) != null;
+    /** Layered material, or anything that declares a "damage" transition. */
+    private static boolean participates(Level level, BlockPos pos, BlockState state) {
+        return state.getBlock() instanceof LayeredBlock
+                || LayeredMaterials.layeredFor(state.getBlock()) != null
+                || Transitions.hasTransition(level, pos, DAMAGE);
     }
 
     /** Height in layers: air 0, layered blocks their layer count, anything else a full block. */

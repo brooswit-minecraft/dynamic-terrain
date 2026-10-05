@@ -1,0 +1,8 @@
+{
+  "minecraft:grass_block": "minecraft:dirt",
+  "minecraft:dirt": "minecraft:gravel",
+  "minecraft:gravel": "minecraft:air",
+  "minecraft:smooth_stone": "minecraft:cobblestone",
+  "minecraft:stone": "minecraft:cobblestone",
+  "minecraft:cobblestone": "minecraft:gravel"
+}
