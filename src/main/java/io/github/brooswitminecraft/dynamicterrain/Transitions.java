@@ -24,6 +24,12 @@ public final class Transitions {
         table = loaded;
     }
 
+    /** Whether the block at {@code pos} declares a result for {@code transition}. */
+    public static boolean hasTransition(Level level, BlockPos pos, String transition) {
+        String from = BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString();
+        return table.resultFor(transition, from).isPresent();
+    }
+
     /** @return true if the block at {@code pos} changed. */
     public static boolean applyTransition(Level level, BlockPos pos, String transition) {
         if (level.isClientSide()) {
