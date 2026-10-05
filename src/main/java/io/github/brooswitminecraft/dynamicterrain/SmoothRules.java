@@ -13,6 +13,14 @@ public final class SmoothRules {
     /** A layered cell. A full block is 16 layers, floor-anchored. */
     public record Cell(int layers, boolean ceiling) {}
 
+    /** Layers a slab is worth: a bottom slab is 8 floor layers, a top slab 8 ceiling layers, a double slab a full block. */
+    public static Cell slab(boolean top, boolean doubleSlab) {
+        if (doubleSlab) {
+            return new Cell(LayerMath.MAX_LAYERS, false);
+        }
+        return new Cell(LayerMath.MAX_LAYERS / 2, top);
+    }
+
     /** What is in the destination cell, relative to the source's material. */
     public enum Destination { EMPTY, SAME_MATERIAL, BLOCKED }
 
