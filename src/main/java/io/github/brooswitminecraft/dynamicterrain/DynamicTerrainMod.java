@@ -53,6 +53,12 @@ public class DynamicTerrainMod {
     public static final DeferredBlock<LayeredBlock> LAYERED_SAND = registerLayered("layered_sand", Blocks.SAND);
     public static final DeferredBlock<LayeredBlock> LAYERED_GRAVEL = registerLayered("layered_gravel", Blocks.GRAVEL);
 
+    public static final DeferredBlock<LayeredBlock> LAYERED_STONE = registerLayered("layered_stone", Blocks.STONE);
+    public static final DeferredBlock<LayeredBlock> LAYERED_COBBLESTONE = registerLayered("layered_cobblestone", Blocks.COBBLESTONE);
+    public static final DeferredBlock<LayeredBlock> LAYERED_SMOOTH_STONE = registerLayered("layered_smooth_stone", Blocks.SMOOTH_STONE);
+    public static final DeferredBlock<LayeredBlock> LAYERED_DEEPSLATE = registerLayered("layered_deepslate", Blocks.DEEPSLATE);
+    public static final DeferredBlock<LayeredBlock> LAYERED_COBBLED_DEEPSLATE = registerLayered("layered_cobbled_deepslate", Blocks.COBBLED_DEEPSLATE);
+
     /** Grass keeps its grass top while graded: a pulled layer stays grass-topped on a slope. */
     public static final DeferredBlock<LayeredBlock> LAYERED_GRASS = BLOCKS.registerBlock("layered_grass",
             LayeredGrassBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).noOcclusion());
@@ -71,6 +77,11 @@ public class DynamicTerrainMod {
     private static final List<DeferredItem<BlockItem>> LAYERED_ITEMS = List.of(
             ITEMS.registerSimpleBlockItem(LAYERED_DIRT),
             ITEMS.registerSimpleBlockItem(LAYERED_GRASS),
+            ITEMS.registerSimpleBlockItem(LAYERED_STONE),
+            ITEMS.registerSimpleBlockItem(LAYERED_COBBLESTONE),
+            ITEMS.registerSimpleBlockItem(LAYERED_SMOOTH_STONE),
+            ITEMS.registerSimpleBlockItem(LAYERED_DEEPSLATE),
+            ITEMS.registerSimpleBlockItem(LAYERED_COBBLED_DEEPSLATE),
             ITEMS.registerSimpleBlockItem(LAYERED_SAND),
             ITEMS.registerSimpleBlockItem(LAYERED_GRAVEL));
 

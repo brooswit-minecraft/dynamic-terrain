@@ -1,0 +1,9 @@
+{
+  "values": [
+    "dynamicterrain:layered_stone",
+    "dynamicterrain:layered_cobblestone",
+    "dynamicterrain:layered_smooth_stone",
+    "dynamicterrain:layered_deepslate",
+    "dynamicterrain:layered_cobbled_deepslate"
+  ]
+}
