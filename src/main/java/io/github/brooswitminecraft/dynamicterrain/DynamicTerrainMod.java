@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 
@@ -27,6 +28,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -67,6 +69,7 @@ public class DynamicTerrainMod {
         modEventBus.addListener(this::addCreative);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new TransitionLoader()));
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -88,6 +91,19 @@ public class DynamicTerrainMod {
             }));
         }
         event.getDispatcher().register(root.then(pos));
+
+        // Debug entry point for the transition registry: /dttransition <pos> <name>.
+        event.getDispatcher().register(Commands.literal("dttransition")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .then(Commands.argument("name", StringArgumentType.word()).executes(context -> {
+                            BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                            String name = StringArgumentType.getString(context, "name");
+                            boolean changed = Transitions.applyTransition(context.getSource().getLevel(), target, name);
+                            context.getSource().sendSuccess(() -> Component.literal(
+                                    changed ? "Applied " + name : "No-op: no '" + name + "' transition for that block"), true);
+                            return changed ? 1 : 0;
+                        }))));
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
