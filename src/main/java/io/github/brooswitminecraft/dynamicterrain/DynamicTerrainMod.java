@@ -66,6 +66,7 @@ public class DynamicTerrainMod {
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
+        NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
