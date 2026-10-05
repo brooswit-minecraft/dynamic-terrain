@@ -1,0 +1,1 @@
+Layered 1/16-height terrain blocks and a smooth() primitive for fine grading, with a generic transition registry, for NeoForge 1.21.1. Early alpha.
