@@ -1,0 +1,16 @@
+{
+  "values": [
+    "#minecraft:dirt",
+    "#minecraft:sand",
+    "#minecraft:base_stone_overworld",
+    "minecraft:gravel",
+    "minecraft:cobblestone",
+    "minecraft:deepslate",
+    "minecraft:cobbled_deepslate",
+    "minecraft:mud",
+    "minecraft:clay",
+    "dynamicterrain:layered_dirt",
+    "dynamicterrain:layered_sand",
+    "dynamicterrain:layered_gravel"
+  ]
+}
