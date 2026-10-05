@@ -109,6 +109,20 @@ public class DynamicTerrainMod {
                             return result == Erosion.Result.MOVED || result == Erosion.Result.DEGRADED ? 1 : 0;
                         }))));
 
+        // Debug entry point for the tire-slip input: /dtslip <pos> <slipSpeed> <loadKg> reports once.
+        event.getDispatcher().register(Commands.literal("dtslip")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .then(Commands.argument("slip", DoubleArgumentType.doubleArg(0))
+                                .then(Commands.argument("loadKg", DoubleArgumentType.doubleArg(0)).executes(context -> {
+                                    BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                                    Erosion.Result result = TireSlip.report(context.getSource().getLevel(), target,
+                                            DoubleArgumentType.getDouble(context, "slip"),
+                                            DoubleArgumentType.getDouble(context, "loadKg"));
+                                    context.getSource().sendSuccess(() -> Component.literal("tire slip: " + result), true);
+                                    return result == Erosion.Result.MOVED || result == Erosion.Result.DEGRADED ? 1 : 0;
+                                })))));
+
         // Debug entry point for water erosion: /dtwater <pos> <samples> samples positions around pos once.
         event.getDispatcher().register(Commands.literal("dtwater")
                 .requires(source -> source.hasPermission(2))
