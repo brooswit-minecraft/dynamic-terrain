@@ -6,6 +6,16 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
+import net.minecraft.commands.arguments.coordinates.Coordinates;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.Block;
@@ -15,7 +25,9 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -42,7 +54,10 @@ public class DynamicTerrainMod {
             ITEMS.registerSimpleBlockItem(LAYERED_GRAVEL));
 
     private static DeferredBlock<LayeredBlock> registerLayered(String name, Block base) {
-        return BLOCKS.registerBlock(name, LayeredBlock::new, BlockBehaviour.Properties.ofFullCopy(base).noOcclusion());
+        DeferredBlock<LayeredBlock> layered = BLOCKS.registerBlock(name, LayeredBlock::new,
+                BlockBehaviour.Properties.ofFullCopy(base).noOcclusion());
+        LayeredMaterials.register(base, layered);
+        return layered;
     }
 
     public DynamicTerrainMod(IEventBus modEventBus, ModContainer modContainer) {
@@ -50,10 +65,28 @@ public class DynamicTerrainMod {
         ITEMS.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
+        NeoForge.EVENT_BUS.addListener(this::registerCommands);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
         LOGGER.info("Dynamic Terrain scaffold loaded");
+    }
+
+    /** Debug entry point for smooth(): /dtsmooth <pos> <direction>. Op only; the grading tool comes later. */
+    private void registerCommands(RegisterCommandsEvent event) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dtsmooth")
+                .requires(source -> source.hasPermission(2));
+        RequiredArgumentBuilder<CommandSourceStack, Coordinates> pos = Commands.argument("pos", BlockPosArgument.blockPos());
+        for (Direction direction : Direction.values()) {
+            pos.then(Commands.literal(direction.getName()).executes(context -> {
+                BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                boolean moved = Smoothing.smooth(context.getSource().getLevel(), target, direction);
+                context.getSource().sendSuccess(() -> Component.literal(
+                        moved ? "Moved one layer " + direction.getName() : "Rejected: nothing moved"), true);
+                return moved ? 1 : 0;
+            }));
+        }
+        event.getDispatcher().register(root.then(pos));
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
