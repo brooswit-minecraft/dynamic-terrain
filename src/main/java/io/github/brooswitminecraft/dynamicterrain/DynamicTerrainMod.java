@@ -75,6 +75,7 @@ public class DynamicTerrainMod {
         NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(WaterErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(EntityErosion::onServerTick);
+        NeoForge.EVENT_BUS.addListener(HeatErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new TransitionLoader()));
     }
 
@@ -134,6 +135,18 @@ public class DynamicTerrainMod {
                             int changed = WaterErosion.sampleAround(context.getSource().getLevel(), center, samples,
                                     context.getSource().getLevel().getRandom());
                             context.getSource().sendSuccess(() -> Component.literal("water erosion changed " + changed + " blocks"), true);
+                            return changed;
+                        }))));
+
+        // Debug entry point for heat erosion: /dtheat <pos> <samples> samples positions around pos once.
+        event.getDispatcher().register(Commands.literal("dtheat")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .then(Commands.argument("samples", IntegerArgumentType.integer(1, 100000)).executes(context -> {
+                            BlockPos center = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                            int changed = HeatErosion.sampleAround(context.getSource().getLevel(), center,
+                                    IntegerArgumentType.getInteger(context, "samples"), context.getSource().getLevel().getRandom());
+                            context.getSource().sendSuccess(() -> Component.literal("heat erosion changed " + changed + " blocks"), true);
                             return changed;
                         }))));
 

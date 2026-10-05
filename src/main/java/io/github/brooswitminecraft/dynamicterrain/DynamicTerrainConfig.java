@@ -8,6 +8,7 @@ public final class DynamicTerrainConfig {
     public static final ModConfigSpec.BooleanValue EROSION_ENABLED;
     public static final ModConfigSpec.IntValue WATER_SAMPLES_PER_SECOND;
     public static final ModConfigSpec.BooleanValue ENTITY_EROSION;
+    public static final ModConfigSpec.IntValue HEAT_SAMPLES_PER_SECOND;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -20,6 +21,9 @@ public final class DynamicTerrainConfig {
         ENTITY_EROSION = builder
                 .comment("Let walking players and mobs wear the ground under them (mass x speed). Needs erosionEnabled.")
                 .define("entityErosion", true);
+        HEAT_SAMPLES_PER_SECOND = builder
+                .comment("Random positions sampled around each player per second for heat (lava) erosion. 0 turns it off.")
+                .defineInRange("heatSamplesPerSecond", 128, 0, 4096);
         SPEC = builder.build();
     }
 
