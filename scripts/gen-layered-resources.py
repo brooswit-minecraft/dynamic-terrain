@@ -11,7 +11,11 @@ from pathlib import Path
 MOD = "dynamicterrain"
 MAX_LAYERS = 16
 # block name -> (display name, texture)
-MATERIALS = {"layered_dirt": ("Layered Dirt", "minecraft:block/dirt")}
+MATERIALS = {
+    "layered_dirt": ("Layered Dirt", "minecraft:block/dirt"),
+    "layered_sand": ("Layered Sand", "minecraft:block/sand"),
+    "layered_gravel": ("Layered Gravel", "minecraft:block/gravel"),
+}
 
 root = Path(__file__).resolve().parent.parent / "src/main/resources/assets" / MOD
 data = Path(__file__).resolve().parent.parent / "src/main/resources/data"

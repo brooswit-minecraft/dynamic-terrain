@@ -1,3 +1,5 @@
 {
-  "block.dynamicterrain.layered_dirt": "Layered Dirt"
+  "block.dynamicterrain.layered_dirt": "Layered Dirt",
+  "block.dynamicterrain.layered_sand": "Layered Sand",
+  "block.dynamicterrain.layered_gravel": "Layered Gravel"
 }
