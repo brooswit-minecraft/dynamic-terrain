@@ -65,4 +65,18 @@ class SmoothRulesTest {
         Plan plan = SmoothRules.plan(new Cell(7, false), Destination.SAME_MATERIAL, new Cell(9, false), false).orElseThrow();
         assertEquals(16, plan.source().layers() + plan.destination().layers());
     }
+
+    @Test
+    void slabsAreWorthEightLayersAndGradeToSeven() {
+        assertEquals(new Cell(8, false), SmoothRules.slab(false, false));
+        assertEquals(new Cell(8, true), SmoothRules.slab(true, false));
+        assertEquals(new Cell(16, false), SmoothRules.slab(false, true));
+        Plan bottom = SmoothRules.plan(SmoothRules.slab(false, false), Destination.EMPTY, null, true).orElseThrow();
+        assertEquals(new Cell(7, false), bottom.source());
+        Plan top = SmoothRules.plan(SmoothRules.slab(true, false), Destination.EMPTY, null, true).orElseThrow();
+        assertEquals(new Cell(7, true), top.source());
+        assertEquals(new Cell(1, true), top.destination());
+        Plan dbl = SmoothRules.plan(SmoothRules.slab(false, true), Destination.EMPTY, null, true).orElseThrow();
+        assertEquals(new Cell(15, false), dbl.source());
+    }
 }

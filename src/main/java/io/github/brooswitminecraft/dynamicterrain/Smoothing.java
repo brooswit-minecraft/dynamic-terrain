@@ -7,6 +7,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -41,14 +44,23 @@ public final class Smoothing {
 
     private static Optional<Move> plan(Level level, BlockPos pos, Direction direction) {
         BlockState sourceState = level.getBlockState(pos);
-        LayeredBlock layeredBlock = sourceState.getBlock() instanceof LayeredBlock lb ? lb
-                : LayeredMaterials.layeredFor(sourceState.getBlock());
-        if (layeredBlock == null) {
+        LayeredBlock layeredBlock;
+        SmoothRules.Cell source;
+        if (sourceState.getBlock() instanceof LayeredBlock lb) {
+            layeredBlock = lb;
+            source = new SmoothRules.Cell(sourceState.getValue(LayeredBlock.LAYERS), sourceState.getValue(LayeredBlock.ANCHOR).isCeiling());
+        } else if ((layeredBlock = LayeredMaterials.layeredFor(sourceState.getBlock())) != null) {
+            source = new SmoothRules.Cell(LayerMath.MAX_LAYERS, false);
+        } else if (sourceState.getBlock() instanceof SlabBlock
+                && (layeredBlock = LayeredMaterials.layeredForSlab(sourceState.getBlock())) != null) {
+            if (sourceState.getValue(BlockStateProperties.WATERLOGGED)) {
+                return Optional.empty(); // the water would have nowhere to go
+            }
+            SlabType type = sourceState.getValue(SlabBlock.TYPE);
+            source = SmoothRules.slab(type == SlabType.TOP, type == SlabType.DOUBLE);
+        } else {
             return Optional.empty();
         }
-        SmoothRules.Cell source = sourceState.getBlock() instanceof LayeredBlock
-                ? new SmoothRules.Cell(sourceState.getValue(LayeredBlock.LAYERS), sourceState.getValue(LayeredBlock.ANCHOR).isCeiling())
-                : new SmoothRules.Cell(LayerMath.MAX_LAYERS, false);
 
         BlockPos destPos = pos.relative(direction);
         BlockState destState = level.getBlockState(destPos);
@@ -65,8 +77,9 @@ public final class Smoothing {
             kind = SmoothRules.Destination.BLOCKED;
         }
         LayeredBlock finalDestBlock = destBlock;
+        LayeredBlock sourceBlock = layeredBlock;
         return SmoothRules.plan(source, kind, dest, anchorSupported(level, pos, destPos, source.ceiling()))
-                .map(plan -> new Move(layeredBlock, finalDestBlock, pos, destPos, plan));
+                .map(plan -> new Move(sourceBlock, finalDestBlock, pos, destPos, plan));
     }
 
     /**

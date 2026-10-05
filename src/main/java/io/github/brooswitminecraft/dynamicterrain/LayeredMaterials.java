@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.Block;
 public final class LayeredMaterials {
     private static final Map<Block, Supplier<? extends LayeredBlock>> LAYERED_BY_BASE = new HashMap<>();
 
+    private static final Map<Block, Supplier<? extends LayeredBlock>> LAYERED_BY_SLAB = new HashMap<>();
     private static final Map<String, List<Supplier<? extends LayeredBlock>>> GROUPS = new HashMap<>();
 
     private LayeredMaterials() {}
@@ -45,6 +46,17 @@ public final class LayeredMaterials {
 
     public static void register(Block base, Supplier<? extends LayeredBlock> layered) {
         LAYERED_BY_BASE.put(base, layered);
+    }
+
+    /** Pair a vanilla slab with the layered block its material grades into. */
+    public static void registerSlab(Block slab, Supplier<? extends LayeredBlock> layered) {
+        LAYERED_BY_SLAB.put(slab, layered);
+    }
+
+    /** The layered variant of a slab block, or null if it has none. */
+    public static LayeredBlock layeredForSlab(Block slab) {
+        Supplier<? extends LayeredBlock> layered = LAYERED_BY_SLAB.get(slab);
+        return layered == null ? null : layered.get();
     }
 
     /** The layered variant of a base block, or null if it has none. */

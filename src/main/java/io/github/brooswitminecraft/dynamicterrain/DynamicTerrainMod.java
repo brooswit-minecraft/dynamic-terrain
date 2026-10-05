@@ -70,6 +70,10 @@ public class DynamicTerrainMod {
         for (Block soil : List.of(Blocks.PODZOL, Blocks.MYCELIUM, Blocks.COARSE_DIRT, Blocks.ROOTED_DIRT)) {
             LayeredMaterials.register(soil, LAYERED_DIRT);
         }
+        LayeredMaterials.registerSlab(Blocks.STONE_SLAB, LAYERED_STONE);
+        LayeredMaterials.registerSlab(Blocks.COBBLESTONE_SLAB, LAYERED_COBBLESTONE);
+        LayeredMaterials.registerSlab(Blocks.SMOOTH_STONE_SLAB, LAYERED_SMOOTH_STONE);
+        LayeredMaterials.registerSlab(Blocks.COBBLED_DEEPSLATE_SLAB, LAYERED_COBBLED_DEEPSLATE);
         LayeredMaterials.joinGroup("soil", LAYERED_DIRT);
         LayeredMaterials.joinGroup("soil", LAYERED_GRASS);
     }
