@@ -10,11 +10,16 @@ from pathlib import Path
 
 MOD = "dynamicterrain"
 MAX_LAYERS = 16
-# block name -> (display name, texture)
+# block name -> (display name, texture, tool)
 MATERIALS = {
-    "layered_dirt": ("Layered Dirt", "minecraft:block/dirt"),
-    "layered_sand": ("Layered Sand", "minecraft:block/sand"),
-    "layered_gravel": ("Layered Gravel", "minecraft:block/gravel"),
+    "layered_dirt": ("Layered Dirt", "minecraft:block/dirt", "shovel"),
+    "layered_sand": ("Layered Sand", "minecraft:block/sand", "shovel"),
+    "layered_gravel": ("Layered Gravel", "minecraft:block/gravel", "shovel"),
+}
+# Grass-topped materials: floor-anchored layers show a biome-tinted grass top and side overlay over
+# dirt; ceiling-anchored layers hang as plain dirt (grass does not grow downward).
+GRASS = {
+    "layered_grass": ("Layered Grass", "shovel"),
 }
 
 root = Path(__file__).resolve().parent.parent / "src/main/resources/assets" / MOD
@@ -45,8 +50,50 @@ def block_model(texture, ceiling, n):
     }
 
 
+def grass_model(ceiling, n):
+    if ceiling:
+        return block_model("minecraft:block/dirt", ceiling, n)
+    # The grass strip is the top of the side texture, so a layer shows the top n rows: grass over dirt.
+    side_uv = [0, 0, 16, n]
+    top_cull = "up" if n == MAX_LAYERS else None
+    base = {
+        "from": [0, 0, 0], "to": [16, n, 16],
+        "faces": {
+            "down": {"uv": [0, 0, 16, 16], "texture": "#bottom", "cullface": "down"},
+            "up": {"uv": [0, 0, 16, 16], "texture": "#top", "tintindex": 0, **({"cullface": top_cull} if top_cull else {})},
+            "north": {"uv": side_uv, "texture": "#side"}, "south": {"uv": side_uv, "texture": "#side"},
+            "west": {"uv": side_uv, "texture": "#side"}, "east": {"uv": side_uv, "texture": "#side"},
+        },
+    }
+    overlay = {
+        "from": [0, 0, 0], "to": [16, n, 16],
+        "faces": {d: {"uv": side_uv, "texture": "#overlay", "tintindex": 0} for d in ("north", "south", "west", "east")},
+    }
+    return {
+        "parent": "minecraft:block/block",
+        # The overlay texture has transparent pixels; in the solid layer they render black.
+        "render_type": "minecraft:cutout_mipped",
+        "textures": {"particle": "minecraft:block/dirt", "bottom": "minecraft:block/dirt",
+                     "top": "minecraft:block/grass_block_top", "side": "minecraft:block/grass_block_side",
+                     "overlay": "minecraft:block/grass_block_side_overlay"},
+        "elements": [base, overlay],
+    }
+
+
 lang = {}
-for name, (display, texture) in MATERIALS.items():
+for name, (display, tool) in GRASS.items():
+    variants = {}
+    for ceiling in (False, True):
+        anchor = "ceiling" if ceiling else "floor"
+        for n in range(1, MAX_LAYERS + 1):
+            model = f"{name}_{anchor}_{n}"
+            write(root / "models/block" / f"{model}.json", grass_model(ceiling, n))
+            variants[f"anchor={anchor},layers={n}"] = {"model": f"{MOD}:block/{model}"}
+    write(root / "blockstates" / f"{name}.json", {"variants": variants})
+    write(root / "models/item" / f"{name}.json", {"parent": f"{MOD}:block/{name}_floor_8"})
+    lang[f"block.{MOD}.{name}"] = display
+
+for name, (display, texture, tool) in MATERIALS.items():
     variants = {}
     for ceiling in (False, True):
         anchor = "ceiling" if ceiling else "floor"
@@ -59,5 +106,7 @@ for name, (display, texture) in MATERIALS.items():
     lang[f"block.{MOD}.{name}"] = display
 
 write(root / "lang/en_us.json", lang)
-write(data / "minecraft/tags/block/mineable/shovel.json",
-      {"values": [f"{MOD}:{n}" for n in MATERIALS]})
+for tool in ("shovel", "pickaxe"):
+    names = [n for n, spec in MATERIALS.items() if spec[2] == tool] + [n for n, spec in GRASS.items() if spec[1] == tool]
+    if names:
+        write(data / f"minecraft/tags/block/mineable/{tool}.json", {"values": [f"{MOD}:{n}" for n in names]})

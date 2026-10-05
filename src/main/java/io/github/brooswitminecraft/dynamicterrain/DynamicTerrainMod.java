@@ -53,8 +53,24 @@ public class DynamicTerrainMod {
     public static final DeferredBlock<LayeredBlock> LAYERED_SAND = registerLayered("layered_sand", Blocks.SAND);
     public static final DeferredBlock<LayeredBlock> LAYERED_GRAVEL = registerLayered("layered_gravel", Blocks.GRAVEL);
 
+    /** Grass keeps its grass top while graded: a pulled layer stays grass-topped on a slope. */
+    public static final DeferredBlock<LayeredBlock> LAYERED_GRASS = BLOCKS.registerBlock("layered_grass",
+            LayeredGrassBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).noOcclusion());
+
+    static {
+        LayeredMaterials.register(Blocks.GRASS_BLOCK, LAYERED_GRASS);
+        // Soil blocks with a different top layer grade into plain layered dirt: the podzol or mycelium
+        // top is lost with the first pull.
+        for (Block soil : List.of(Blocks.PODZOL, Blocks.MYCELIUM, Blocks.COARSE_DIRT, Blocks.ROOTED_DIRT)) {
+            LayeredMaterials.register(soil, LAYERED_DIRT);
+        }
+        LayeredMaterials.joinGroup("soil", LAYERED_DIRT);
+        LayeredMaterials.joinGroup("soil", LAYERED_GRASS);
+    }
+
     private static final List<DeferredItem<BlockItem>> LAYERED_ITEMS = List.of(
             ITEMS.registerSimpleBlockItem(LAYERED_DIRT),
+            ITEMS.registerSimpleBlockItem(LAYERED_GRASS),
             ITEMS.registerSimpleBlockItem(LAYERED_SAND),
             ITEMS.registerSimpleBlockItem(LAYERED_GRAVEL));
 
