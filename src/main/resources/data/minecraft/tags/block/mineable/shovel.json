@@ -2,6 +2,7 @@
   "values": [
     "dynamicterrain:layered_dirt",
     "dynamicterrain:layered_sand",
-    "dynamicterrain:layered_gravel"
+    "dynamicterrain:layered_gravel",
+    "dynamicterrain:layered_grass"
   ]
 }
