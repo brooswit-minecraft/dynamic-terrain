@@ -33,7 +33,11 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -48,6 +52,10 @@ public class DynamicTerrainMod {
 
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, MODID);
+
+    public static final DeferredHolder<Feature<?>, SmoothSurfaceFeature> SMOOTH_SURFACE =
+            FEATURES.register("smooth_surface", () -> new SmoothSurfaceFeature(NoneFeatureConfiguration.CODEC));
 
     public static final DeferredBlock<LayeredBlock> LAYERED_DIRT = registerLayered("layered_dirt", Blocks.DIRT);
     public static final DeferredBlock<LayeredBlock> LAYERED_SAND = registerLayered("layered_sand", Blocks.SAND);
@@ -98,6 +106,7 @@ public class DynamicTerrainMod {
 
     public DynamicTerrainMod(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
+        FEATURES.register(modEventBus);
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
@@ -155,6 +164,19 @@ public class DynamicTerrainMod {
                                             DoubleArgumentType.getDouble(context, "loadKg"));
                                     context.getSource().sendSuccess(() -> Component.literal("tire slip: " + result), true);
                                     return result == Erosion.Result.MOVED || result == Erosion.Result.DEGRADED ? 1 : 0;
+                                })))));
+
+        // Debug entry point for terrain smoothness: /dtheightstats <x> <z> <radius> measures loaded surface steps.
+        event.getDispatcher().register(Commands.literal("dtheightstats")
+                .requires(source -> source.hasPermission(2))
+                .then(Commands.argument("x", IntegerArgumentType.integer())
+                        .then(Commands.argument("z", IntegerArgumentType.integer())
+                                .then(Commands.argument("radius", IntegerArgumentType.integer(1, 300)).executes(context -> {
+                                    String report = SurfaceStats.measure(context.getSource().getLevel(),
+                                            IntegerArgumentType.getInteger(context, "x"), IntegerArgumentType.getInteger(context, "z"),
+                                            IntegerArgumentType.getInteger(context, "radius"));
+                                    context.getSource().sendSuccess(() -> Component.literal(report), false);
+                                    return 1;
                                 })))));
 
         // Debug entry point for the surface model: /dtsurface <pos> prints what a tire would feel there.
