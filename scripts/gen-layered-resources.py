@@ -20,7 +20,33 @@ MATERIALS = {
     "layered_smooth_stone": ("Layered Smooth Stone", "minecraft:block/smooth_stone", "pickaxe"),
     "layered_deepslate": ("Layered Deepslate", "minecraft:block/deepslate", "pickaxe"),
     "layered_cobbled_deepslate": ("Layered Cobbled Deepslate", "minecraft:block/cobbled_deepslate", "pickaxe"),
+    "layered_terracotta": ("Layered Terracotta", "minecraft:block/terracotta", "pickaxe"),
+    "layered_red_terracotta": ("Layered Red Terracotta", "minecraft:block/red_terracotta", "pickaxe"),
+    "layered_orange_terracotta": ("Layered Orange Terracotta", "minecraft:block/orange_terracotta", "pickaxe"),
+    "layered_yellow_terracotta": ("Layered Yellow Terracotta", "minecraft:block/yellow_terracotta", "pickaxe"),
+    "layered_brown_terracotta": ("Layered Brown Terracotta", "minecraft:block/brown_terracotta", "pickaxe"),
+    "layered_white_terracotta": ("Layered White Terracotta", "minecraft:block/white_terracotta", "pickaxe"),
+    "layered_light_gray_terracotta": ("Layered Light Gray Terracotta", "minecraft:block/light_gray_terracotta", "pickaxe"),
+    "layered_red_sand": ("Layered Red Sand", "minecraft:block/red_sand", "shovel"),
+    "layered_ice": ("Layered Ice", "minecraft:block/ice", "pickaxe"),
+    "layered_packed_ice": ("Layered Packed Ice", "minecraft:block/packed_ice", "pickaxe"),
+    "layered_snow_block": ("Layered Snow Block", "minecraft:block/snow", "shovel"),
+    "layered_coarse_dirt": ("Layered Coarse Dirt", "minecraft:block/coarse_dirt", "shovel"),
+    "layered_podzol": ("Layered Podzol", "minecraft:block/podzol_top", "shovel"),
+    "layered_mycelium": ("Layered Mycelium", "minecraft:block/mycelium_top", "shovel"),
+    "layered_mud": ("Layered Mud", "minecraft:block/mud", "shovel"),
+    "layered_clay": ("Layered Clay", "minecraft:block/clay", "shovel"),
+    "layered_sandstone": ("Layered Sandstone", "minecraft:block/sandstone", "pickaxe"),
+    "layered_red_sandstone": ("Layered Red Sandstone", "minecraft:block/red_sandstone", "pickaxe"),
+    "layered_tuff": ("Layered Tuff", "minecraft:block/tuff", "pickaxe"),
+    "layered_andesite": ("Layered Andesite", "minecraft:block/andesite", "pickaxe"),
+    "layered_granite": ("Layered Granite", "minecraft:block/granite", "pickaxe"),
+    "layered_diorite": ("Layered Diorite", "minecraft:block/diorite", "pickaxe"),
+    "layered_netherrack": ("Layered Netherrack", "minecraft:block/netherrack", "pickaxe"),
+    "layered_blackstone": ("Layered Blackstone", "minecraft:block/blackstone", "pickaxe"),
 }
+# Materials whose texture has transparency render translucent.
+TRANSLUCENT = {"layered_ice"}
 # Grass-topped materials: floor-anchored layers show a biome-tinted grass top and side overlay over
 # dirt; ceiling-anchored layers hang as plain dirt (grass does not grow downward).
 GRASS = {
@@ -36,12 +62,13 @@ def write(path, obj):
     path.write_text(json.dumps(obj, indent=2) + "\n")
 
 
-def block_model(texture, ceiling, n):
+def block_model(texture, ceiling, n, translucent=False):
     lo, hi = (MAX_LAYERS - n, MAX_LAYERS) if ceiling else (0, n)
     side_uv = [0, 0, 16, n] if ceiling else [0, MAX_LAYERS - n, 16, 16]
     face = lambda uv, cull=None: {"uv": uv, "texture": "#all", **({"cullface": cull} if cull else {})}
     return {
         "parent": "minecraft:block/block",
+        **({"render_type": "minecraft:translucent"} if translucent else {}),
         "textures": {"all": texture, "particle": texture},
         "elements": [{
             "from": [0, lo, 0], "to": [16, hi, 16],
@@ -104,7 +131,7 @@ for name, (display, texture, tool) in MATERIALS.items():
         anchor = "ceiling" if ceiling else "floor"
         for n in range(1, MAX_LAYERS + 1):
             model = f"{name}_{anchor}_{n}"
-            write(root / "models/block" / f"{model}.json", block_model(texture, ceiling, n))
+            write(root / "models/block" / f"{model}.json", block_model(texture, ceiling, n, name in TRANSLUCENT))
             variants[f"anchor={anchor},layers={n}"] = {"model": f"{MOD}:block/{model}"}
     write(root / "blockstates" / f"{name}.json", {"variants": variants})
     write(root / "models/item" / f"{name}.json", {"parent": f"{MOD}:block/{name}_floor_8"})

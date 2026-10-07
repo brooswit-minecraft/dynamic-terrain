@@ -3,6 +3,13 @@
     "dynamicterrain:layered_dirt",
     "dynamicterrain:layered_sand",
     "dynamicterrain:layered_gravel",
+    "dynamicterrain:layered_red_sand",
+    "dynamicterrain:layered_snow_block",
+    "dynamicterrain:layered_coarse_dirt",
+    "dynamicterrain:layered_podzol",
+    "dynamicterrain:layered_mycelium",
+    "dynamicterrain:layered_mud",
+    "dynamicterrain:layered_clay",
     "dynamicterrain:layered_grass"
   ]
 }
