@@ -4,6 +4,23 @@
     "dynamicterrain:layered_cobblestone",
     "dynamicterrain:layered_smooth_stone",
     "dynamicterrain:layered_deepslate",
-    "dynamicterrain:layered_cobbled_deepslate"
+    "dynamicterrain:layered_cobbled_deepslate",
+    "dynamicterrain:layered_terracotta",
+    "dynamicterrain:layered_red_terracotta",
+    "dynamicterrain:layered_orange_terracotta",
+    "dynamicterrain:layered_yellow_terracotta",
+    "dynamicterrain:layered_brown_terracotta",
+    "dynamicterrain:layered_white_terracotta",
+    "dynamicterrain:layered_light_gray_terracotta",
+    "dynamicterrain:layered_ice",
+    "dynamicterrain:layered_packed_ice",
+    "dynamicterrain:layered_sandstone",
+    "dynamicterrain:layered_red_sandstone",
+    "dynamicterrain:layered_tuff",
+    "dynamicterrain:layered_andesite",
+    "dynamicterrain:layered_granite",
+    "dynamicterrain:layered_diorite",
+    "dynamicterrain:layered_netherrack",
+    "dynamicterrain:layered_blackstone"
   ]
 }
