@@ -7,7 +7,8 @@ import net.minecraft.world.level.Level;
  * Public input for vehicles. A slipping tire does not know whether it is on
  * sand or obsidian: it reports how hard it is sliding and erosion alone
  * decides whether the surface changes. Call once per physics tick per wheel
- * with the block that supports the contact patch.
+ * with the block that supports the contact patch. Allowed by {@code vehicleErosion}
+ * even while world erosion is off.
  */
 public final class TireSlip {
     private TireSlip() {}
@@ -24,6 +25,6 @@ public final class TireSlip {
         if (amount <= 0) {
             return Erosion.Result.SKIPPED;
         }
-        return Erosion.erode(level, contactBlock, amount);
+        return Erosion.erodeFromVehicle(level, contactBlock, amount);
     }
 }

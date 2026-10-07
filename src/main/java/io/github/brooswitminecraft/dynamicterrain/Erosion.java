@@ -28,7 +28,17 @@ public final class Erosion {
     }
 
     public static Result erode(Level level, BlockPos pos, double amount, RandomSource random) {
-        if (level.isClientSide() || !DynamicTerrainConfig.EROSION_ENABLED.get()) {
+        return erode(level, pos, amount, random, DynamicTerrainConfig.EROSION_ENABLED.get());
+    }
+
+    /** Erosion caused by a vehicle tire: allowed by {@code vehicleErosion} even while world erosion is off. */
+    static Result erodeFromVehicle(Level level, BlockPos pos, double amount) {
+        return erode(level, pos, amount, level.getRandom(),
+                DynamicTerrainConfig.EROSION_ENABLED.get() || DynamicTerrainConfig.VEHICLE_EROSION.get());
+    }
+
+    private static Result erode(Level level, BlockPos pos, double amount, RandomSource random, boolean enabled) {
+        if (level.isClientSide() || !enabled) {
             return Result.DISABLED;
         }
         BlockState state = level.getBlockState(pos);
