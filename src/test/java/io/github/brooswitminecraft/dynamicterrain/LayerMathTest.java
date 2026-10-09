@@ -41,4 +41,16 @@ class LayerMathTest {
             assertEquals(16, LayerMath.maxY(ceiling, 16));
         }
     }
+
+    @Test
+    void walkableBelowEightLayers() {
+        assertTrue(LayerMath.isWalkable(1));
+        assertTrue(LayerMath.isWalkable(7));
+    }
+
+    @Test
+    void notWalkableAtOrAboveEightLayers() {
+        assertFalse(LayerMath.isWalkable(8));
+        assertFalse(LayerMath.isWalkable(16));
+    }
 }

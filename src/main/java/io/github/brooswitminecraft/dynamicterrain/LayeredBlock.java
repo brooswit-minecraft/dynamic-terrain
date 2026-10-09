@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -69,6 +70,23 @@ public class LayeredBlock extends Block {
     @Override
     protected boolean useShapeForLightOcclusion(BlockState state) {
         return true;
+    }
+
+    /**
+     * Matches vanilla SnowLayerBlock's pattern: LAND is walkable below a
+     * height threshold scaled to this block's 16-layer granularity (vanilla
+     * snow's {@code < 5} of 8 layers is {@code < 8} of 16 here); WATER and
+     * AIR are never pathfindable through a LayeredBlock. Without this
+     * override, the inherited default treats any non-full-block shape as
+     * pathfindable, which resolves most of a smoothed slope to
+     * PathType.OPEN instead of WALKABLE and freezes ground mobs.
+     */
+    @Override
+    protected boolean isPathfindable(BlockState state, PathComputationType pathComputationType) {
+        return switch (pathComputationType) {
+            case LAND -> LayerMath.isWalkable(state.getValue(LAYERS));
+            case WATER, AIR -> false;
+        };
     }
 
     @Override
