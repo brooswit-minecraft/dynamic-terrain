@@ -28,4 +28,13 @@ public final class LayerMath {
     public static int maxY(boolean ceiling, int layers) {
         return ceiling ? MAX_LAYERS : layers;
     }
+
+    /**
+     * Whether a LAND pathfinder may stand on a cell with this many layers.
+     * Mirrors vanilla SnowLayerBlock's {@code layers < 5} of 8, scaled to
+     * this block's 16-layer granularity.
+     */
+    public static boolean isWalkable(int layers) {
+        return layers < 8;
+    }
 }
