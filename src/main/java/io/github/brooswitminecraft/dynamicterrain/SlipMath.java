@@ -6,10 +6,10 @@ package io.github.brooswitminecraft.dynamicterrain;
  * seconds, a brief skid barely scratches it. Starting numbers, to be tuned.
  */
 public final class SlipMath {
-    /** Erosion amount for 10 m/s of slip under a 1000 kg wheel load, per report. */
+    /** Erosion amount for 10 m/s of slip under a 300 kg wheel load (about one wheel of a 1200 kg car), per report. */
     public static final double BASE = 0.01;
     public static final double REFERENCE_SLIP = 10.0;
-    public static final double REFERENCE_LOAD_KG = 1000.0;
+    public static final double REFERENCE_LOAD_KG = 300.0;
     public static final double MAX_SLIP_FACTOR = 3.0;
     public static final double MIN_LOAD_FACTOR = 0.25;
     public static final double MAX_LOAD_FACTOR = 4.0;

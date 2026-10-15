@@ -16,13 +16,13 @@ class SlipMathTest {
 
     @Test
     void referenceSlipAndLoadGiveTheBase() {
-        assertEquals(SlipMath.BASE, SlipMath.amount(10, 1000), 1e-12);
+        assertEquals(SlipMath.BASE, SlipMath.amount(10, SlipMath.REFERENCE_LOAD_KG), 1e-12);
     }
 
     @Test
     void harderSlipAndHeavierWheelsWearMore() {
-        assertTrue(SlipMath.amount(20, 1000) > SlipMath.amount(10, 1000));
-        assertTrue(SlipMath.amount(10, 2000) > SlipMath.amount(10, 1000));
+        assertTrue(SlipMath.amount(20, SlipMath.REFERENCE_LOAD_KG) > SlipMath.amount(10, SlipMath.REFERENCE_LOAD_KG));
+        assertTrue(SlipMath.amount(10, 2 * SlipMath.REFERENCE_LOAD_KG) > SlipMath.amount(10, SlipMath.REFERENCE_LOAD_KG));
     }
 
     @Test
