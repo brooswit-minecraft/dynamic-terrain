@@ -3,6 +3,7 @@ package io.github.brooswitminecraft.dynamicterrain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.mojang.serialization.Codec;
 
@@ -39,7 +40,11 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * directly against the chunk's own structure starts/references, not inferred from
  * blocks, so an open plaza or a door's terrain-adaptation beard is protected even
  * with nothing placed directly above it). Roads and farms have no layered form at
- * all, so they are untouched for a different reason. Gated by {@code worldgenSmoothing}.
+ * all, so they are untouched for a different reason. If a structure merely
+ * referenced from this chunk cannot be resolved (its start chunk is outside the
+ * worldgen region's cache), the whole chunk is left untouched rather than risk
+ * smoothing part of its footprint ({@link StructureProtection}). Gated by
+ * {@code worldgenSmoothing}.
  */
 public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
     public SmoothSurfaceFeature(Codec<NoneFeatureConfiguration> codec) {
@@ -57,8 +62,14 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
 
         // Resolved once per chunk, not per column: the chunk's own structure starts/references, kept to
         // chunks already in cache (hasChunk) so this can never force-load a chunk outside the region this
-        // generation step was given — doing that crashes worldgen instead of merely slowing it down.
-        List<StructureBounds> structures = structureBoundsNear(level, x0 >> 4, z0 >> 4);
+        // generation step was given — doing that crashes worldgen instead of merely slowing it down. If a
+        // referenced structure's start chunk is out of cache, fail closed: skip the whole chunk rather than
+        // silently smoothing a column that structure might actually cover.
+        Optional<List<StructureBounds>> structures = structureBoundsNear(level, x0 >> 4, z0 >> 4);
+        if (structures.isEmpty()) {
+            return false;
+        }
+        List<StructureBounds> structureBounds = structures.get();
 
         // Natural surface heights for the chunk plus a one-block border, all read from blocks. (Asking the
         // generator for heights costs milliseconds per column and made chunk generation several times slower.)
@@ -85,44 +96,51 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
                         around[a][b] = natural[dx + a][dz + b];
                     }
                 }
-                changed |= smoothColumn(level, x0 + dx, z0 + dz, around, structures);
+                changed |= smoothColumn(level, x0 + dx, z0 + dz, around, structureBounds);
             }
         }
         return changed;
     }
 
     /**
-     * Bounding boxes of every structure touching this chunk: ones that start here, plus ones that merely
-     * reference this chunk, resolved from the chunk that actually started them when that chunk is in cache.
-     * A reference to a structure whose start chunk is out of cache is skipped rather than fetched, so this
-     * never forces a chunk load outside the generation step's region.
+     * Bounding boxes of every structure touching this chunk: ones that start here (always resolvable,
+     * no lookup needed), plus ones that merely reference this chunk, resolved from the chunk that
+     * actually started them when that chunk is in cache ({@code hasChunk} is checked before every
+     * {@code getChunk}, so this never forces a chunk load outside the generation step's region — doing
+     * that crashes worldgen rather than just being slow). The fail-closed policy for an unresolved
+     * reference lives in {@link StructureProtection}, which this only feeds.
      */
-    private static List<StructureBounds> structureBoundsNear(WorldGenLevel level, int chunkX, int chunkZ) {
+    private static Optional<List<StructureBounds>> structureBoundsNear(WorldGenLevel level, int chunkX, int chunkZ) {
         if (!level.hasChunk(chunkX, chunkZ)) {
-            return List.of();
+            return Optional.of(List.of());
         }
-        List<StructureBounds> bounds = new ArrayList<>();
         ChunkAccess chunk = level.getChunk(chunkX, chunkZ);
+        List<StructureBounds> localStarts = new ArrayList<>();
         for (StructureStart start : chunk.getAllStarts().values()) {
-            addBounds(bounds, start);
+            boundsOf(start).ifPresent(localStarts::add);
         }
+        List<StructureProtection.ReferenceLookup> referencedStarts = new ArrayList<>();
         for (Map.Entry<Structure, LongSet> entry : chunk.getAllReferences().entrySet()) {
             for (long packed : entry.getValue()) {
                 int ox = ChunkPos.getX(packed);
                 int oz = ChunkPos.getZ(packed);
-                if (level.hasChunk(ox, oz)) {
-                    addBounds(bounds, level.getChunk(ox, oz).getStartForStructure(entry.getKey()));
+                if (!level.hasChunk(ox, oz)) {
+                    referencedStarts.add(StructureProtection.ReferenceLookup.unresolved());
+                } else {
+                    StructureStart start = level.getChunk(ox, oz).getStartForStructure(entry.getKey());
+                    referencedStarts.add(StructureProtection.ReferenceLookup.resolved(boundsOf(start)));
                 }
             }
         }
-        return bounds;
+        return StructureProtection.resolve(localStarts, referencedStarts);
     }
 
-    private static void addBounds(List<StructureBounds> bounds, StructureStart start) {
-        if (start != null && start.isValid()) {
-            BoundingBox box = start.getBoundingBox();
-            bounds.add(new StructureBounds(box.minX(), box.minZ(), box.maxX(), box.maxZ()));
+    private static Optional<StructureBounds> boundsOf(StructureStart start) {
+        if (start == null || !start.isValid()) {
+            return Optional.empty();
         }
+        BoundingBox box = start.getBoundingBox();
+        return Optional.of(new StructureBounds(box.minX(), box.minZ(), box.maxX(), box.maxZ()));
     }
 
     /**
