@@ -169,6 +169,13 @@ public class DynamicTerrainMod {
         NeoForge.EVENT_BUS.addListener(HeatErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(CaveIns::onNeighborNotify);
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new TransitionLoader()));
+        // Canonical texture analysis is cached off the classpath, not the active resource pack (see
+        // CanonicalTextures), but a reload still means "assets may have changed" (a dev hot-swap, a
+        // mod/data version bump): drop the cache so the next lookup re-reads and re-analyzes.
+        NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> {
+            CanonicalTextures.invalidateAll();
+            BlockFaceTextures.invalidateAll();
+        });
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -241,6 +248,24 @@ public class DynamicTerrainMod {
                             s.rollingResistance(), s.deformability())), false);
                     return 1;
                 })));
+
+        // Debug entry point for per-texel canonical texture evidence: /dttexture <pos> <face>.
+        LiteralArgumentBuilder<CommandSourceStack> textureRoot = Commands.literal("dttexture")
+                .requires(source -> source.hasPermission(2));
+        RequiredArgumentBuilder<CommandSourceStack, Coordinates> texturePos = Commands.argument("pos", BlockPosArgument.blockPos());
+        for (Direction direction : Direction.values()) {
+            texturePos.then(Commands.literal(direction.getName()).executes(context -> {
+                BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                var patch = Surfaces.contactPatch(context.getSource().getLevel(), target, direction,
+                        0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+                context.getSource().sendSuccess(() -> Component.literal(patch
+                        .map(p -> String.format("chroma=%.2f contrast=%.2f xVar=%.2f yVar=%.2f", p.average().chroma(),
+                                p.average().luminanceContrast(), p.average().xVariation(), p.average().yVariation()))
+                        .orElse("no canonical texture evidence for that block/face")), false);
+                return patch.isPresent() ? 1 : 0;
+            }));
+        }
+        event.getDispatcher().register(textureRoot.then(texturePos));
 
         // Debug entry point for water erosion: /dtwater <pos> <samples> samples positions around pos once.
         event.getDispatcher().register(Commands.literal("dtwater")
