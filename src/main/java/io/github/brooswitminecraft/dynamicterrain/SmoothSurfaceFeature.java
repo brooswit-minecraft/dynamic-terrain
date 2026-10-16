@@ -1,18 +1,29 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.mojang.serialization.Codec;
+
+import it.unimi.dsi.fastutil.longs.LongSet;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 /**
  * Worldgen smoothing: runs once per newly generated chunk in the
@@ -23,8 +34,12 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  *
  * <p>It leaves a column alone unless the surface is plain natural ground: the top
  * block must have a layered form, the cell above it must be air (no trees, snow,
- * plants, water or structures), and the cell below must be solid. Roads, farms
- * and villages are therefore untouched. Gated by {@code worldgenSmoothing}.
+ * plants or water), the cell below must be solid, and the column must not fall
+ * inside a generated structure's bounding box (village, outpost, etc. — checked
+ * directly against the chunk's own structure starts/references, not inferred from
+ * blocks, so an open plaza or a door's terrain-adaptation beard is protected even
+ * with nothing placed directly above it). Roads and farms have no layered form at
+ * all, so they are untouched for a different reason. Gated by {@code worldgenSmoothing}.
  */
 public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
     public SmoothSurfaceFeature(Codec<NoneFeatureConfiguration> codec) {
@@ -39,6 +54,11 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
         WorldGenLevel level = context.level();
         int x0 = context.origin().getX();
         int z0 = context.origin().getZ();
+
+        // Resolved once per chunk, not per column: the chunk's own structure starts/references, kept to
+        // chunks already in cache (hasChunk) so this can never force-load a chunk outside the region this
+        // generation step was given — doing that crashes worldgen instead of merely slowing it down.
+        List<StructureBounds> structures = structureBoundsNear(level, x0 >> 4, z0 >> 4);
 
         // Natural surface heights for the chunk plus a one-block border, all read from blocks. (Asking the
         // generator for heights costs milliseconds per column and made chunk generation several times slower.)
@@ -65,10 +85,44 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
                         around[a][b] = natural[dx + a][dz + b];
                     }
                 }
-                changed |= smoothColumn(level, x0 + dx, z0 + dz, around);
+                changed |= smoothColumn(level, x0 + dx, z0 + dz, around, structures);
             }
         }
         return changed;
+    }
+
+    /**
+     * Bounding boxes of every structure touching this chunk: ones that start here, plus ones that merely
+     * reference this chunk, resolved from the chunk that actually started them when that chunk is in cache.
+     * A reference to a structure whose start chunk is out of cache is skipped rather than fetched, so this
+     * never forces a chunk load outside the generation step's region.
+     */
+    private static List<StructureBounds> structureBoundsNear(WorldGenLevel level, int chunkX, int chunkZ) {
+        if (!level.hasChunk(chunkX, chunkZ)) {
+            return List.of();
+        }
+        List<StructureBounds> bounds = new ArrayList<>();
+        ChunkAccess chunk = level.getChunk(chunkX, chunkZ);
+        for (StructureStart start : chunk.getAllStarts().values()) {
+            addBounds(bounds, start);
+        }
+        for (Map.Entry<Structure, LongSet> entry : chunk.getAllReferences().entrySet()) {
+            for (long packed : entry.getValue()) {
+                int ox = ChunkPos.getX(packed);
+                int oz = ChunkPos.getZ(packed);
+                if (level.hasChunk(ox, oz)) {
+                    addBounds(bounds, level.getChunk(ox, oz).getStartForStructure(entry.getKey()));
+                }
+            }
+        }
+        return bounds;
+    }
+
+    private static void addBounds(List<StructureBounds> bounds, StructureStart start) {
+        if (start != null && start.isValid()) {
+            BoundingBox box = start.getBoundingBox();
+            bounds.add(new StructureBounds(box.minX(), box.minZ(), box.maxX(), box.maxZ()));
+        }
     }
 
     /**
@@ -94,7 +148,10 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
         return pos.getY() + 1;
     }
 
-    private static boolean smoothColumn(LevelAccessor level, int x, int z, int[][] around) {
+    private static boolean smoothColumn(LevelAccessor level, int x, int z, int[][] around, List<StructureBounds> structures) {
+        if (StructureBounds.containsAny(structures, x, z)) {
+            return false; // inside a structure's footprint
+        }
         int surface = around[1][1]; // top of the highest solid block
         BlockPos top = new BlockPos(x, surface - 1, z);
         BlockState topState = level.getBlockState(top);
