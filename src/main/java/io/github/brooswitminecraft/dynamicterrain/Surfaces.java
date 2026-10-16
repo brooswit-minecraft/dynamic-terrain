@@ -1,8 +1,5 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
@@ -13,10 +10,11 @@ import net.minecraft.world.level.block.state.BlockState;
  * Vehicle-facing surface lookup. Vehicles ask the contacted block for driving
  * properties; they never modify terrain directly. A block or sound-group
  * declared in {@link SurfaceOverrides} wins over {@link SurfaceMath}'s
- * automatic inference.
+ * automatic inference. The per-block result is cached; {@link SurfaceOverrides}
+ * clears that cache on every reload, so a changed declaration is never served stale.
  */
 public final class Surfaces {
-    private static final Map<Block, SurfaceProperties> CACHE = new ConcurrentHashMap<>();
+    private static final SurfaceCache<Block> CACHE = new SurfaceCache<>();
 
     private Surfaces() {}
 
@@ -26,6 +24,10 @@ public final class Surfaces {
             return SurfaceProperties.PAVEMENT;
         }
         return CACHE.computeIfAbsent(state.getBlock(), block -> infer(block, state, level, pos));
+    }
+
+    static void invalidateCache() {
+        CACHE.clear();
     }
 
     private static SurfaceProperties infer(Block block, BlockState state, BlockGetter level, BlockPos pos) {
