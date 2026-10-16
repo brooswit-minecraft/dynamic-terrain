@@ -31,7 +31,7 @@ public final class DynamicTerrainConfig {
                 .comment("Random positions sampled around each player per second for heat (lava) erosion. 0 turns it off.")
                 .defineInRange("heatSamplesPerSecond", 128, 0, 4096);
         CAVE_INS_ENABLED = builder
-                .comment("Let unsupported terrain blocks break and drop (cave-ins). Separate from erosion. Existing worlds may collapse where terrain was never supported.")
+                .comment("Let unsupported terrain blocks collapse (cave-ins): layered blocks fall under gravity like sand/gravel, other supported blocks break and drop. Separate from erosion. Existing worlds may collapse where terrain was never supported.")
                 .define("caveInsEnabled", false);
         WORLDGEN_SMOOTHING = builder
                 .comment("Smooth newly generated overworld terrain with layered blocks (1-block steps become fractional ramps). "
