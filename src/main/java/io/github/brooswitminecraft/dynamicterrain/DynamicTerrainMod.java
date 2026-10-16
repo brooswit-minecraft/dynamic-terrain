@@ -189,6 +189,7 @@ public class DynamicTerrainMod {
         NeoForge.EVENT_BUS.addListener(HeatErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(CaveIns::onNeighborNotify);
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new TransitionLoader()));
+        NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new SurfaceOverrideLoader()));
         // Canonical texture analysis is cached off the classpath, not the active resource pack (see
         // CanonicalTextures), but a reload still means "assets may have changed" (a dev hot-swap, a
         // mod/data version bump): drop the cache so the next lookup re-reads and re-analyzes.

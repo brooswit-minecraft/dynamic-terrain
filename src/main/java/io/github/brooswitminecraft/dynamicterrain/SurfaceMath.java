@@ -4,7 +4,8 @@ package io.github.brooswitminecraft.dynamicterrain;
  * Pure inference of {@link SurfaceProperties} from what Minecraft already
  * knows about a block: its sound group (a material prior), vanilla friction
  * (slipperiness), hardness and blast resistance. This is the automatic level;
- * SoundType-level and per-block overrides layer on top of it. The tune is a
+ * {@link SurfaceOverrides} (a family- or per-block declaration, data-driven
+ * via {@link SurfaceOverrideLoader}) layers on top of it. The tune is a
  * starting point to calibrate against vanilla surfaces.
  */
 public final class SurfaceMath {

@@ -1,8 +1,6 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -14,10 +12,13 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Vehicle-facing surface lookup. Vehicles ask the contacted block for driving
- * properties; they never modify terrain directly.
+ * properties; they never modify terrain directly. A block or sound-group
+ * declared in {@link SurfaceOverrides} wins over {@link SurfaceMath}'s
+ * automatic inference. The per-block result is cached; {@link SurfaceOverrides}
+ * clears that cache on every reload, so a changed declaration is never served stale.
  */
 public final class Surfaces {
-    private static final Map<Block, SurfaceProperties> CACHE = new ConcurrentHashMap<>();
+    private static final SurfaceCache<Block> CACHE = new SurfaceCache<>();
 
     private Surfaces() {}
 
@@ -27,6 +28,10 @@ public final class Surfaces {
             return SurfaceProperties.PAVEMENT;
         }
         return CACHE.computeIfAbsent(state.getBlock(), block -> infer(block, state, level, pos));
+    }
+
+    static void invalidateCache() {
+        CACHE.clear();
     }
 
     /**
@@ -59,8 +64,11 @@ public final class Surfaces {
     }
 
     private static SurfaceProperties infer(Block block, BlockState state, BlockGetter level, BlockPos pos) {
-        double hardness = state.getDestroySpeed(level, pos);
-        return SurfaceMath.infer(familyOf(state.getSoundType()), block.getFriction(), hardness, block.getExplosionResistance());
+        SurfaceMath.Family family = familyOf(state.getSoundType());
+        return SurfaceOverrides.forBlock(block, family).orElseGet(() -> {
+            double hardness = state.getDestroySpeed(level, pos);
+            return SurfaceMath.infer(family, block.getFriction(), hardness, block.getExplosionResistance());
+        });
     }
 
     static SurfaceMath.Family familyOf(SoundType sound) {
