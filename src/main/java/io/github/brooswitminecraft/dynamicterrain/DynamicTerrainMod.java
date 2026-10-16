@@ -73,6 +73,16 @@ public class DynamicTerrainMod {
     public static final DeferredBlock<LayeredBlock> LAYERED_BROWN_TERRACOTTA = registerLayered("layered_brown_terracotta", Blocks.BROWN_TERRACOTTA);
     public static final DeferredBlock<LayeredBlock> LAYERED_WHITE_TERRACOTTA = registerLayered("layered_white_terracotta", Blocks.WHITE_TERRACOTTA);
     public static final DeferredBlock<LayeredBlock> LAYERED_LIGHT_GRAY_TERRACOTTA = registerLayered("layered_light_gray_terracotta", Blocks.LIGHT_GRAY_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_MAGENTA_TERRACOTTA = registerLayered("layered_magenta_terracotta", Blocks.MAGENTA_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_LIGHT_BLUE_TERRACOTTA = registerLayered("layered_light_blue_terracotta", Blocks.LIGHT_BLUE_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_LIME_TERRACOTTA = registerLayered("layered_lime_terracotta", Blocks.LIME_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_PINK_TERRACOTTA = registerLayered("layered_pink_terracotta", Blocks.PINK_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_GRAY_TERRACOTTA = registerLayered("layered_gray_terracotta", Blocks.GRAY_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_CYAN_TERRACOTTA = registerLayered("layered_cyan_terracotta", Blocks.CYAN_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_PURPLE_TERRACOTTA = registerLayered("layered_purple_terracotta", Blocks.PURPLE_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_BLUE_TERRACOTTA = registerLayered("layered_blue_terracotta", Blocks.BLUE_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_GREEN_TERRACOTTA = registerLayered("layered_green_terracotta", Blocks.GREEN_TERRACOTTA);
+    public static final DeferredBlock<LayeredBlock> LAYERED_BLACK_TERRACOTTA = registerLayered("layered_black_terracotta", Blocks.BLACK_TERRACOTTA);
     public static final DeferredBlock<LayeredBlock> LAYERED_RED_SAND = registerLayered("layered_red_sand", Blocks.RED_SAND);
     public static final DeferredBlock<LayeredBlock> LAYERED_ICE = registerLayered("layered_ice", Blocks.ICE);
     public static final DeferredBlock<LayeredBlock> LAYERED_PACKED_ICE = registerLayered("layered_packed_ice", Blocks.PACKED_ICE);
@@ -130,6 +140,16 @@ public class DynamicTerrainMod {
             ITEMS.registerSimpleBlockItem(LAYERED_BROWN_TERRACOTTA),
             ITEMS.registerSimpleBlockItem(LAYERED_WHITE_TERRACOTTA),
             ITEMS.registerSimpleBlockItem(LAYERED_LIGHT_GRAY_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_MAGENTA_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_LIGHT_BLUE_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_LIME_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_PINK_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_GRAY_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_CYAN_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_PURPLE_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_BLUE_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_GREEN_TERRACOTTA),
+            ITEMS.registerSimpleBlockItem(LAYERED_BLACK_TERRACOTTA),
             ITEMS.registerSimpleBlockItem(LAYERED_RED_SAND),
             ITEMS.registerSimpleBlockItem(LAYERED_ICE),
             ITEMS.registerSimpleBlockItem(LAYERED_PACKED_ICE),
