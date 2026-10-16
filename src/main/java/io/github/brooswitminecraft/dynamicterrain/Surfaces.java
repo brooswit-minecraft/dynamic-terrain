@@ -11,7 +11,9 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Vehicle-facing surface lookup. Vehicles ask the contacted block for driving
- * properties; they never modify terrain directly.
+ * properties; they never modify terrain directly. A block or sound-group
+ * declared in {@link SurfaceOverrides} wins over {@link SurfaceMath}'s
+ * automatic inference.
  */
 public final class Surfaces {
     private static final Map<Block, SurfaceProperties> CACHE = new ConcurrentHashMap<>();
@@ -27,8 +29,11 @@ public final class Surfaces {
     }
 
     private static SurfaceProperties infer(Block block, BlockState state, BlockGetter level, BlockPos pos) {
-        double hardness = state.getDestroySpeed(level, pos);
-        return SurfaceMath.infer(familyOf(state.getSoundType()), block.getFriction(), hardness, block.getExplosionResistance());
+        SurfaceMath.Family family = familyOf(state.getSoundType());
+        return SurfaceOverrides.forBlock(block, family).orElseGet(() -> {
+            double hardness = state.getDestroySpeed(level, pos);
+            return SurfaceMath.infer(family, block.getFriction(), hardness, block.getExplosionResistance());
+        });
     }
 
     static SurfaceMath.Family familyOf(SoundType sound) {
