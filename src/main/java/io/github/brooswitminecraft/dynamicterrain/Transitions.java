@@ -49,6 +49,9 @@ public final class Transitions {
                 next = copy(state, next, property);
             }
         }
+        if (next.getBlock() instanceof LayeredGrassBlock grass) {
+            next = grass.withSnowy(level, pos, next);
+        }
         return level.setBlock(pos, next, Block.UPDATE_ALL);
     }
 

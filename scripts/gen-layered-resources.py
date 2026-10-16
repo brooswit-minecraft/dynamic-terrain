@@ -27,6 +27,16 @@ MATERIALS = {
     "layered_brown_terracotta": ("Layered Brown Terracotta", "minecraft:block/brown_terracotta", "pickaxe"),
     "layered_white_terracotta": ("Layered White Terracotta", "minecraft:block/white_terracotta", "pickaxe"),
     "layered_light_gray_terracotta": ("Layered Light Gray Terracotta", "minecraft:block/light_gray_terracotta", "pickaxe"),
+    "layered_magenta_terracotta": ("Layered Magenta Terracotta", "minecraft:block/magenta_terracotta", "pickaxe"),
+    "layered_light_blue_terracotta": ("Layered Light Blue Terracotta", "minecraft:block/light_blue_terracotta", "pickaxe"),
+    "layered_lime_terracotta": ("Layered Lime Terracotta", "minecraft:block/lime_terracotta", "pickaxe"),
+    "layered_pink_terracotta": ("Layered Pink Terracotta", "minecraft:block/pink_terracotta", "pickaxe"),
+    "layered_gray_terracotta": ("Layered Gray Terracotta", "minecraft:block/gray_terracotta", "pickaxe"),
+    "layered_cyan_terracotta": ("Layered Cyan Terracotta", "minecraft:block/cyan_terracotta", "pickaxe"),
+    "layered_purple_terracotta": ("Layered Purple Terracotta", "minecraft:block/purple_terracotta", "pickaxe"),
+    "layered_blue_terracotta": ("Layered Blue Terracotta", "minecraft:block/blue_terracotta", "pickaxe"),
+    "layered_green_terracotta": ("Layered Green Terracotta", "minecraft:block/green_terracotta", "pickaxe"),
+    "layered_black_terracotta": ("Layered Black Terracotta", "minecraft:block/black_terracotta", "pickaxe"),
     "layered_red_sand": ("Layered Red Sand", "minecraft:block/red_sand", "shovel"),
     "layered_ice": ("Layered Ice", "minecraft:block/ice", "pickaxe"),
     "layered_packed_ice": ("Layered Packed Ice", "minecraft:block/packed_ice", "pickaxe"),
@@ -82,8 +92,11 @@ def block_model(texture, ceiling, n, translucent=False):
     }
 
 
-def grass_model(ceiling, n):
+def grass_model(ceiling, n, snowy=False):
     if ceiling:
+        # Grass does not grow downward, and nothing meaningfully sits "above" a ceiling
+        # layer, so snowy is always false there; still generated for both snowy
+        # variants because the blockstate must map every anchor/layers/snowy combo.
         return block_model("minecraft:block/dirt", ceiling, n)
     # The grass strip is the top of the side texture, so a layer shows the top n rows: grass over dirt.
     side_uv = [0, 0, 16, n]
@@ -92,11 +105,21 @@ def grass_model(ceiling, n):
         "from": [0, 0, 0], "to": [16, n, 16],
         "faces": {
             "down": {"uv": [0, 0, 16, 16], "texture": "#bottom", "cullface": "down"},
-            "up": {"uv": [0, 0, 16, 16], "texture": "#top", "tintindex": 0, **({"cullface": top_cull} if top_cull else {})},
+            "up": {"uv": [0, 0, 16, 16], "texture": "#top",
+                   **({} if snowy else {"tintindex": 0}), **({"cullface": top_cull} if top_cull else {})},
             "north": {"uv": side_uv, "texture": "#side"}, "south": {"uv": side_uv, "texture": "#side"},
             "west": {"uv": side_uv, "texture": "#side"}, "east": {"uv": side_uv, "texture": "#side"},
         },
     }
+    if snowy:
+        # Matches vanilla grass_block_snow: a plain frosted side texture, no overlay,
+        # and the top loses its biome tint (same as vanilla's snowy grass_block model).
+        return {
+            "parent": "minecraft:block/block",
+            "textures": {"particle": "minecraft:block/dirt", "bottom": "minecraft:block/dirt",
+                         "top": "minecraft:block/grass_block_top", "side": "minecraft:block/grass_block_snow"},
+            "elements": [base],
+        }
     overlay = {
         "from": [0, 0, 0], "to": [16, n, 16],
         "faces": {d: {"uv": side_uv, "texture": "#overlay", "tintindex": 0} for d in ("north", "south", "west", "east")},
@@ -119,8 +142,16 @@ for name, (display, tool) in GRASS.items():
         anchor = "ceiling" if ceiling else "floor"
         for n in range(1, MAX_LAYERS + 1):
             model = f"{name}_{anchor}_{n}"
-            write(root / "models/block" / f"{model}.json", grass_model(ceiling, n))
-            variants[f"anchor={anchor},layers={n}"] = {"model": f"{MOD}:block/{model}"}
+            write(root / "models/block" / f"{model}.json", grass_model(ceiling, n, snowy=False))
+            variants[f"anchor={anchor},layers={n},snowy=false"] = {"model": f"{MOD}:block/{model}"}
+            if ceiling:
+                # Snowy never applies to a ceiling layer; reuse the plain-dirt model so the
+                # blockstate still maps every anchor/layers/snowy combination the block declares.
+                variants[f"anchor={anchor},layers={n},snowy=true"] = {"model": f"{MOD}:block/{model}"}
+            else:
+                snowy_model = f"{model}_snowy"
+                write(root / "models/block" / f"{snowy_model}.json", grass_model(ceiling, n, snowy=True))
+                variants[f"anchor={anchor},layers={n},snowy=true"] = {"model": f"{MOD}:block/{snowy_model}"}
     write(root / "blockstates" / f"{name}.json", {"variants": variants})
     write(root / "models/item" / f"{name}.json", {"parent": f"{MOD}:block/{name}_floor_8"})
     lang[f"block.{MOD}.{name}"] = display

@@ -6,18 +6,23 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 /**
- * V1 structural collapse. After a neighbouring block changes, any block in the
- * {@code dynamicterrain:supported} tag runs the bounded support search; if the
- * connected material cannot meet its required score, the block simply breaks
- * and drops its item. That update makes its own neighbours recheck, so cave-ins
- * cascade without falling entities and without any link to erosion. Gated by
- * {@code caveInsEnabled}.
+ * Structural collapse. After a neighbouring block changes, any block in the
+ * {@code dynamicterrain:supported} tag runs the bounded support search; if
+ * the connected material cannot meet its required score, the block gives
+ * way. A {@link LayeredBlock} falls under gravity exactly like vanilla sand
+ * or gravel — {@link FallingBlockEntity#fall} carries its full block state,
+ * so material identity, layer height and anchor survive the fall and the
+ * landing. Any other supported block has no layer/anchor state to preserve,
+ * so it keeps the V1 behaviour: it simply breaks and drops its item. Either
+ * way the update makes neighbours recheck, so cave-ins cascade without any
+ * link to erosion. Gated by {@code caveInsEnabled}.
  */
 public final class CaveIns {
     public static final TagKey<Block> SUPPORTED = TagKey.create(Registries.BLOCK,
@@ -50,6 +55,10 @@ public final class CaveIns {
         int required = SupportMath.requiredScore(state.getDestroySpeed(level, pos), state.getBlock().getExplosionResistance());
         if (SupportSearch.isSupported((x, y, z) -> cellAt(level, x, y, z), pos.getX(), pos.getY(), pos.getZ(), required, MAX_VISITED)) {
             return false;
+        }
+        if (state.getBlock() instanceof LayeredBlock) {
+            FallingBlockEntity.fall(level, pos, state);
+            return true;
         }
         return level.destroyBlock(pos, true);
     }
