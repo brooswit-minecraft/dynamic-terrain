@@ -32,8 +32,8 @@ public final class Smoothing {
             return false;
         }
         Move m = move.get();
-        level.setBlock(m.source(), stateOf(m.block(), m.plan().source()), Block.UPDATE_ALL);
-        level.setBlock(m.destination(), stateOf(m.destinationBlock(), m.plan().destination()), Block.UPDATE_ALL);
+        level.setBlock(m.source(), stateOf(level, m.source(), m.block(), m.plan().source()), Block.UPDATE_ALL);
+        level.setBlock(m.destination(), stateOf(level, m.destination(), m.destinationBlock(), m.plan().destination()), Block.UPDATE_ALL);
         return true;
     }
 
@@ -96,12 +96,16 @@ public final class Smoothing {
         return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, toSupport.getOpposite());
     }
 
-    private static BlockState stateOf(LayeredBlock block, SmoothRules.Cell cell) {
+    private static BlockState stateOf(Level level, BlockPos pos, LayeredBlock block, SmoothRules.Cell cell) {
         if (cell == null) {
             return Blocks.AIR.defaultBlockState();
         }
-        return block.defaultBlockState()
+        BlockState state = block.defaultBlockState()
                 .setValue(LayeredBlock.LAYERS, cell.layers())
                 .setValue(LayeredBlock.ANCHOR, cell.ceiling() ? Anchor.CEILING : Anchor.FLOOR);
+        if (block instanceof LayeredGrassBlock grass) {
+            state = grass.withSnowy(level, pos, state);
+        }
+        return state;
     }
 }
