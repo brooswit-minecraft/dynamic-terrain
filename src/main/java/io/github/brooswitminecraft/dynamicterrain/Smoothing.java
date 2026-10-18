@@ -24,6 +24,17 @@ public final class Smoothing {
 
     /** @return true if a layer moved, false if the move was rejected. */
     public static boolean smooth(Level level, BlockPos pos, Direction direction) {
+        return smooth(level, pos, direction, false);
+    }
+
+    /**
+     * @param disturb whether this move counts as disturbance: grass-group material
+     *     settles as dirt on both ends instead of keeping a grass top. Erosion
+     *     disturbs; manual grading and the debug command do not (grass keeps its
+     *     grass top while graded).
+     * @return true if a layer moved, false if the move was rejected.
+     */
+    static boolean smooth(Level level, BlockPos pos, Direction direction, boolean disturb) {
         if (level.isClientSide()) {
             return false;
         }
@@ -32,8 +43,10 @@ public final class Smoothing {
             return false;
         }
         Move m = move.get();
-        level.setBlock(m.source(), stateOf(level, m.source(), m.block(), m.plan().source()), Block.UPDATE_ALL);
-        level.setBlock(m.destination(), stateOf(level, m.destination(), m.destinationBlock(), m.plan().destination()), Block.UPDATE_ALL);
+        LayeredBlock sourceBlock = disturb ? LayeredMaterials.disturbed(m.block()) : m.block();
+        LayeredBlock destBlock = disturb ? LayeredMaterials.disturbed(m.destinationBlock()) : m.destinationBlock();
+        level.setBlock(m.source(), stateOf(level, m.source(), sourceBlock, m.plan().source()), Block.UPDATE_ALL);
+        level.setBlock(m.destination(), stateOf(level, m.destination(), destBlock, m.plan().destination()), Block.UPDATE_ALL);
         return true;
     }
 

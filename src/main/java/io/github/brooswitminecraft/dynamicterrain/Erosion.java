@@ -57,7 +57,7 @@ public final class Erosion {
         Collections.shuffle(directions, new java.util.Random(random.nextLong()));
         for (Direction direction : directions) {
             if (ErosionMath.isDownhill(height, heightOf(level.getBlockState(pos.relative(direction))))
-                    && Smoothing.smooth(level, pos, direction)) {
+                    && Smoothing.smooth(level, pos, direction, true)) {
                 return Result.MOVED;
             }
         }
