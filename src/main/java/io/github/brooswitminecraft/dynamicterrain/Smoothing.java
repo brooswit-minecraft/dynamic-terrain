@@ -20,7 +20,8 @@ public final class Smoothing {
     private Smoothing() {}
 
     /** A planned move: nothing has changed in the world yet. */
-    private record Move(LayeredBlock block, LayeredBlock destinationBlock, BlockPos source, BlockPos destination, SmoothRules.Plan plan) {}
+    private record Move(LayeredBlock block, LayeredBlock destinationBlock, BlockPos source, BlockPos destination,
+            SmoothRules.Plan plan, SmoothRules.Destination kind) {}
 
     /** @return true if a layer moved, false if the move was rejected. */
     public static boolean smooth(Level level, BlockPos pos, Direction direction) {
@@ -43,8 +44,10 @@ public final class Smoothing {
             return false;
         }
         Move m = move.get();
-        LayeredBlock sourceBlock = disturb ? LayeredMaterials.disturbed(m.block()) : m.block();
-        LayeredBlock destBlock = disturb ? LayeredMaterials.disturbed(m.destinationBlock()) : m.destinationBlock();
+        Settling.Result settle = Settling.settle(disturb, m.block() instanceof LayeredGrassBlock, m.kind(),
+                m.destinationBlock() instanceof LayeredGrassBlock);
+        LayeredBlock sourceBlock = settle.source() ? LayeredMaterials.disturbed(m.block()) : m.block();
+        LayeredBlock destBlock = settle.destination() ? LayeredMaterials.disturbed(m.destinationBlock()) : m.destinationBlock();
         level.setBlock(m.source(), stateOf(level, m.source(), sourceBlock, m.plan().source()), Block.UPDATE_ALL);
         level.setBlock(m.destination(), stateOf(level, m.destination(), destBlock, m.plan().destination()), Block.UPDATE_ALL);
         return true;
@@ -92,7 +95,7 @@ public final class Smoothing {
         LayeredBlock finalDestBlock = destBlock;
         LayeredBlock sourceBlock = layeredBlock;
         return SmoothRules.plan(source, kind, dest, anchorSupported(level, pos, destPos, source.ceiling()))
-                .map(plan -> new Move(sourceBlock, finalDestBlock, pos, destPos, plan));
+                .map(plan -> new Move(sourceBlock, finalDestBlock, pos, destPos, plan, kind));
     }
 
     /**
