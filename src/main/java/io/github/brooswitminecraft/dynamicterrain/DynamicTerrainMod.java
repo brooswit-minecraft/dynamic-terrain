@@ -121,6 +121,9 @@ public class DynamicTerrainMod {
         LayeredMaterials.joinGroup("soil", LAYERED_COARSE_DIRT);
         LayeredMaterials.joinGroup("soil", LAYERED_PODZOL);
         LayeredMaterials.joinGroup("soil", LAYERED_MYCELIUM);
+        // Erosion disturbance settles grass as dirt instead of keeping a grass top
+        // (see Smoothing's disturb flag); manual grading above is unaffected.
+        LayeredMaterials.disturbsTo(LAYERED_GRASS, LAYERED_DIRT);
     }
 
     private static final List<DeferredItem<BlockItem>> LAYERED_ITEMS = List.of(
