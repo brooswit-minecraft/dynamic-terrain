@@ -40,17 +40,21 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * against the chunk's own structure starts/references, not inferred from blocks,
  * so an open plaza or a door's terrain-adaptation beard is protected even with
  * nothing placed directly above it). A thin vanilla snow layer counts as plain
- * ground in its own right: smoothing can thicken or thin it exactly like any
- * other material, directly in its own cell, so the result always sits flush
- * with whatever is solid beneath it — resolved to {@link DynamicTerrainMod#LAYERED_SNOW_BLOCK}
- * directly here rather than through {@link LayeredMaterials}, so this stays a
- * worldgen-only behaviour and does not also make thin snow erodible or
- * hand-gradable like a registered material would. The one place that needs its
- * own case is a rising surface, where the snow's own cell has to become a
- * genuinely full block first — unlike every other natural ground top, thin snow
- * is not already a full cube, so a new cell added above it would otherwise
- * float. Roads and farms have no layered form at all, so they are untouched for
- * a different reason. If a structure merely
+ * ground in its own right: unlike every other natural ground top, it doesn't
+ * block motion ({@code Blocks.SNOW} is {@code forceSolidOff}), so it has to be
+ * explicitly discovered in {@link #groundHeight} rather than simply being the
+ * block the usual height scan stops on. Once discovered, smoothing can
+ * thicken or thin it exactly like any other material, directly in its own
+ * cell, so the result always sits flush with whatever is solid beneath it —
+ * resolved to {@link DynamicTerrainMod#LAYERED_SNOW_BLOCK} directly here
+ * rather than through {@link LayeredMaterials}, so this stays a worldgen-only
+ * behaviour and does not also make thin snow erodible or hand-gradable like a
+ * registered material would. The one place that needs its own case is a
+ * rising surface, where the snow's own cell has to become a genuinely full
+ * block first — unlike every other natural ground top, thin snow is not
+ * already a full cube, so a new cell added above it would otherwise float.
+ * Roads and farms have no layered form at all, so they are untouched for a
+ * different reason. If a structure merely
  * referenced from this chunk cannot be resolved (its start chunk is outside the
  * worldgen region's cache), the whole chunk is left untouched rather than risk
  * smoothing part of its footprint ({@link StructureProtection}). Gated by
@@ -156,6 +160,12 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
     /**
      * Top of the highest ground block in a column, looking down through trees, leaves and air. With
      * {@code roundLayered}, a floor-anchored layered block on top counts as its fractional height, rounded.
+     *
+     * <p>{@code Blocks.SNOW} (the thin vanilla snow layer) is registered {@code forceSolidOff}, so
+     * {@code blocksMotion()} is false for it at any layer count and the loop below walks straight through
+     * it to the real ground underneath, same as it walks through air. A thin snow layer directly on top
+     * of that real ground counts as the natural surface anyway — it is itself plain, smoothable natural
+     * ground (see the class doc) — so it is explicitly discovered and added back in afterwards.
      */
     private static int groundHeight(LevelAccessor level, int x, int z, boolean roundLayered) {
         int minY = level.getMinBuildHeight();
@@ -166,6 +176,9 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
                 break;
             }
             pos.move(0, -1, 0);
+        }
+        if (level.getBlockState(pos.above()).is(Blocks.SNOW)) {
+            pos.move(0, 1, 0);
         }
         if (roundLayered && pos.getY() > minY) {
             BlockState ground = level.getBlockState(pos);
@@ -187,48 +200,45 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
         // LayeredMaterials, which Smoothing (the grading tool) and Erosion also consult: registering it
         // there would make every thin snow layer in already-generated worlds erodible/gradable too, well
         // beyond this worldgen-only fix.
-        LayeredBlock layered = topState.is(Blocks.SNOW)
-                ? DynamicTerrainMod.LAYERED_SNOW_BLOCK.get()
-                : LayeredMaterials.layeredFor(topState.getBlock());
-        if (layered == null || !level.getBlockState(top.above()).isAir() || !level.getBlockState(top.below()).canOcclude()) {
-            return false; // not plain natural ground
-        }
+        boolean isSnow = topState.is(Blocks.SNOW);
+        LayeredBlock layered = isSnow ? DynamicTerrainMod.LAYERED_SNOW_BLOCK.get() : LayeredMaterials.layeredFor(topState.getBlock());
+        SmoothColumnRules.TopKind kind = layered == null ? SmoothColumnRules.TopKind.NONE
+                : isSnow ? SmoothColumnRules.TopKind.SNOW
+                : topState.is(Blocks.GRASS_BLOCK) || topState.is(Blocks.MYCELIUM) || topState.is(Blocks.PODZOL) ? SmoothColumnRules.TopKind.GRASSY
+                : SmoothColumnRules.TopKind.PLAIN;
+        boolean coverIsAir = level.getBlockState(top.above()).isAir();
+        boolean belowOccludes = level.getBlockState(top.below()).canOcclude();
         SurfaceSmoother.Cell cell = SurfaceSmoother.cellOf(SurfaceSmoother.target(around));
-        if (cell.y() == surface - 1 && cell.layers() == LayerMath.MAX_LAYERS) {
-            return false; // the surface did not move
-        }
-        if (cell.y() == surface && cell.layers() == 0) {
-            return false;
-        }
-        BlockState partial = layered.defaultBlockState()
-                .setValue(LayeredBlock.LAYERS, Math.max(LayerMath.MIN_LAYERS, cell.layers()))
-                .setValue(LayeredBlock.ANCHOR, Anchor.FLOOR);
-        if (cell.y() >= surface) {
-            // The surface rises into the air above: add a layered block there, and a covered grass top turns to dirt.
-            if (cell.layers() == 0) {
+        SmoothColumnRules.Plan plan = SmoothColumnRules.plan(kind, coverIsAir, belowOccludes, surface, cell);
+
+        switch (plan.outcome()) {
+            case BLOCKED, UNCHANGED -> {
                 return false;
             }
-            set(level, top.above(), partial);
-            if (topState.is(Blocks.GRASS_BLOCK) || topState.is(Blocks.MYCELIUM) || topState.is(Blocks.PODZOL)) {
-                set(level, top, Blocks.DIRT.defaultBlockState());
-            } else if (topState.is(Blocks.SNOW)) {
-                // Unlike every other natural ground top, a thin vanilla snow layer is not already a full
-                // cube — it can be as little as one of eight layers. The new partial cell rising above it
-                // needs genuinely full support, so the snow itself becomes a full layered-snow block first;
-                // leaving it as-is would float the new cell above whatever fraction of the block it filled.
-                set(level, top, layered.defaultBlockState()
-                        .setValue(LayeredBlock.LAYERS, LayerMath.MAX_LAYERS)
-                        .setValue(LayeredBlock.ANCHOR, Anchor.FLOOR));
+            case RISE, RISE_WITH_GRASS_CONVERSION, RISE_WITH_SNOW_CONVERSION -> {
+                // The surface rises into the air above: add a layered block there.
+                set(level, top.above(), partial(layered, plan.layers()));
+                if (plan.outcome() == SmoothColumnRules.Outcome.RISE_WITH_GRASS_CONVERSION) {
+                    set(level, top, Blocks.DIRT.defaultBlockState()); // a covered grass top turns to dirt
+                } else if (plan.outcome() == SmoothColumnRules.Outcome.RISE_WITH_SNOW_CONVERSION) {
+                    // Unlike every other natural ground top, a thin vanilla snow layer is not already a
+                    // full cube — it can be as little as one of eight layers. The new partial cell rising
+                    // above it needs genuinely full support, so the snow itself becomes a full layered-snow
+                    // block first; leaving it as-is would float the new cell above whatever fraction of the
+                    // block it filled.
+                    set(level, top, partial(layered, LayerMath.MAX_LAYERS));
+                }
             }
-            return true;
-        }
-        // The surface drops: the top block becomes a partial (or empty) cell. Blocks above it are air.
-        if (cell.layers() == 0) {
-            set(level, top, Blocks.AIR.defaultBlockState());
-        } else {
-            set(level, top, partial);
+            case DROP_TO_EMPTY -> set(level, top, Blocks.AIR.defaultBlockState()); // blocks above it are air
+            case DROP_TO_PARTIAL -> set(level, top, partial(layered, plan.layers()));
         }
         return true;
+    }
+
+    private static BlockState partial(LayeredBlock layered, int layers) {
+        return layered.defaultBlockState()
+                .setValue(LayeredBlock.LAYERS, Math.max(LayerMath.MIN_LAYERS, layers))
+                .setValue(LayeredBlock.ANCHOR, Anchor.FLOOR);
     }
 
     private static void set(LevelAccessor level, BlockPos pos, BlockState state) {
