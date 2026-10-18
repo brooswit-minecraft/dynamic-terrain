@@ -1,0 +1,4 @@
+bump: patch
+
+### Fixed
+- Worldgen smoothing (MINECRAFT-64) now generates layered terraces on snowy slopes instead of skipping them. Previously any column topped with a thin vanilla snow layer was rejected outright: Minecraft's thin snow layer doesn't block motion, so the feature's ground-height scan walked straight past it to the real ground underneath, and the resulting column was then rejected because something (the snow) sat directly above that ground. Thin snow is now explicitly discovered and smoothed in its own cell, exactly like any other natural ground top, so the result always sits flush with whatever is solid beneath it — no floating snow, no gaps. Snow-covered stone and snow-covered full snow blocks are both covered; columns with anything else above them (trees, plants, water, ...) are still left untouched, and the behavior stays worldgen-only (it does not make thin snow erodible or hand-gradable in already-generated worlds).
