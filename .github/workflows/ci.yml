@@ -69,3 +69,55 @@ jobs:
     with:
       gated-paths: '["^src/"]'
       version-file: 'gradle.properties'
+
+  # MINECRAFT-499 / Wroosbit gap 1 (John's 18:58 direction): a fresh-placement registry lookup is
+  # not proof that a world saved by the pre-extraction, monolithic Dynamic Terrain still resolves
+  # once reopened with the split pair. Boots the actual pre-extraction build (this branch's merge
+  # base with main) as a dedicated server, places representative layered blocks, saves to disk;
+  # then boots the actual split-pair build against that same saved world and reads the blocks back
+  # over RCON. No client needed -- this is a server-side save/reload upgrade proof.
+  legacy-save-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Checkout paired Layered Slopes PR (MINECRAFT-499 integration validation)
+        uses: actions/checkout@v4
+        with:
+          repository: brooswit-minecraft/layered-slopes
+          ref: minecraft-499-extract-layered-blocks
+          path: layered-slopes-paired
+
+      - name: Build paired Layered Slopes
+        run: cd layered-slopes-paired && ./gradlew build --no-daemon
+
+      - name: Checkout pre-extraction Dynamic Terrain as a separate worktree
+        run: |
+          git fetch origin main
+          BASE=$(git merge-base origin/main HEAD)
+          echo "Pre-extraction base: $BASE"
+          git worktree add ../old-dt "$BASE"
+
+      - name: Run legacy save/reload acceptance
+        run: |
+          python3 tools/legacy-save/legacy_save_acceptance.py ../old-dt . \
+            -PlayeredslopesLocalJar=layered-slopes-paired/build/libs/layeredslopes-0.0.0.jar
+
+      - name: Preserve legacy save acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-save-acceptance
+          path: |
+            legacy-save-*.log
+            legacy-save-acceptance-result.json
+          if-no-files-found: warn
