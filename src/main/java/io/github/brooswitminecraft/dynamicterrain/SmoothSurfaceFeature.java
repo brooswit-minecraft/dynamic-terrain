@@ -3,6 +3,7 @@ package io.github.brooswitminecraft.dynamicterrain;
 import io.github.brooswitminecraft.layeredslopes.Anchor;
 import io.github.brooswitminecraft.layeredslopes.LayerMath;
 import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
+import io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -205,7 +206,7 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
         // there would make every thin snow layer in already-generated worlds erodible/gradable too, well
         // beyond this worldgen-only fix.
         boolean isSnow = topState.is(Blocks.SNOW);
-        LayeredBlock layered = isSnow ? DynamicTerrainMod.LAYERED_SNOW_BLOCK.get() : LayeredMaterials.layeredFor(topState.getBlock());
+        LayeredBlock layered = isSnow ? LayeredSlopesMod.LAYERED_SNOW_BLOCK.get() : LayeredMaterials.layeredFor(topState.getBlock());
         SmoothColumnRules.TopKind kind = layered == null ? SmoothColumnRules.TopKind.NONE
                 : isSnow ? SmoothColumnRules.TopKind.SNOW
                 : topState.is(Blocks.GRASS_BLOCK) || topState.is(Blocks.MYCELIUM) || topState.is(Blocks.PODZOL) ? SmoothColumnRules.TopKind.GRASSY
