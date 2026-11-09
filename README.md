@@ -49,9 +49,30 @@ family itself moved.
 real block-extraction release) has not been reviewed/merged/released yet;
 only its pre-extraction `v0.1.0` scaffold release exists, which must **not**
 be pinned here (it ships none of the moved classes). `downloadLayeredSlopes`
-fails loudly rather than silently building against a wrong or missing jar.
-This PR's build will go green once those two properties are filled in with
-the real release.
+fails loudly rather than silently building against a wrong or missing jar
+when that placeholder is still set.
+
+**Paired-PR integration validation (temporary):** per review guidance, this
+PR's hosted CI checks out brooswit-minecraft/layered-slopes at its own
+`minecraft-499-extract-layered-blocks` branch, builds it, and builds this
+mod against that real jar via `-PlayeredslopesLocalJar=<path>` (see
+`ci.yml` and `build.gradle`) — proving this mod actually compiles against
+the extracted classes now, without pinning to the unrelated `v0.1.0`
+scaffold or waiting on a release. This is how the stale
+`ClientEvents`/`DynamicTerrainMod.LAYERED_GRASS` reference the review
+caught got caught: it no longer exists (the grass tint handler moved to
+Layered Slopes). The `-PlayeredslopesLocalJar` override and its paired
+checkout CI step are removed once layered-slopes#1 merges and releases and
+the real version+sha512 pin above is filled in; `downloadLayeredSlopes`
+becomes the normal build path again at that point.
+
+Not covered by this PR's automation, and not manually playtested: actual
+client/server mod-loader runtime (the paired CI step proves compile-time
+classloading only), standalone/coinstalled load, placement/stacking/
+drops/render/collision/pathfinding behavior in a running game, and
+legacy-world/save upgrade. Per review guidance, no GameTest/runtime
+harness is introduced here (neither this mod nor Layered Slopes has ever
+had one); that remains a bounded follow-up.
 
 ## Building
 

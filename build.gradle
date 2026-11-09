@@ -33,14 +33,26 @@ repositories {
 // DynamicTerrainMod). Required, not optional: unlike Courier Craft's optional dynamic-vehicles
 // integration, Dynamic Terrain cannot function without the real registered layered blocks, so
 // this goes on compileOnly AND runtimeOnly, and is declared "required" in neoforge.mods.toml.
-def layeredSlopesJar = layout.buildDirectory.file("layeredslopes/layeredslopes-${project.layeredslopes_version}.jar")
+//
+// `-PlayeredslopesLocalJar=<path>` overrides the release download with a locally built jar, for
+// paired-PR integration validation before layered-slopes has a public release (MINECRAFT-499
+// review comment 52571: "paired hosted validation may build/use the exact Layered Slopes PR
+// artifact ... before a public release exists, while retaining fail-closed real release pins for
+// shipped consumers" -- see ci.yml's "Build against paired Layered Slopes PR" step). Never used
+// as a substitute for the real version+sha512 pin below once that release exists.
+def localLayeredSlopesJar = findProperty("layeredslopesLocalJar")
+def layeredSlopesJar = localLayeredSlopesJar
+        ? layout.projectDirectory.file(localLayeredSlopesJar as String)
+        : layout.buildDirectory.file("layeredslopes/layeredslopes-${project.layeredslopes_version}.jar")
 tasks.register("downloadLayeredSlopes") {
     outputs.file(layeredSlopesJar)
+    onlyIf { !localLayeredSlopesJar }
     doLast {
         if (project.layeredslopes_version == "UNRELEASED") {
             throw new GradleException("layeredslopes_version/layeredslopes_sha512 in gradle.properties are still " +
                     "the MINECRAFT-499 placeholder -- fill them in with the real brooswit-minecraft/layered-slopes " +
-                    "release (its block-extraction PR, not the pre-extraction v0.1.0 scaffold) before building.")
+                    "release (its block-extraction PR, not the pre-extraction v0.1.0 scaffold) before building, " +
+                    "or pass -PlayeredslopesLocalJar=<path> for paired-PR integration validation only.")
         }
         def target = layeredSlopesJar.get().asFile
         target.parentFile.mkdirs()
