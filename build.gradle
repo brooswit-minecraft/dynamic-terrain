@@ -44,6 +44,14 @@ def localLayeredSlopesJar = findProperty("layeredslopesLocalJar")
 def layeredSlopesJar = localLayeredSlopesJar
         ? layout.projectDirectory.file(localLayeredSlopesJar as String)
         : layout.buildDirectory.file("layeredslopes/layeredslopes-${project.layeredslopes_version}.jar")
+// neoforge.mods.toml's dependency versionRange must be a real, parseable version for actual mod
+// loading (runs, GameTests) to succeed -- confirmed live: "Mod dynamicterrain requires
+// layeredslopes UNRELEASED or above" crashed runGameTestServer outright, even though plain
+// compileJava/test never boot the mod loader and so never noticed. When using the paired-PR local
+// jar override, its own gradle.properties default version (0.0.0, matching the jar filename
+// ci.yml's paired build produces) is what's actually loaded, so the metadata must say that, not
+// the UNRELEASED placeholder.
+def effectiveLayeredSlopesVersion = localLayeredSlopesJar ? "0.0.0" : project.layeredslopes_version
 tasks.register("downloadLayeredSlopes") {
     outputs.file(layeredSlopesJar)
     onlyIf { !localLayeredSlopesJar }
@@ -143,7 +151,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_name               : mod_name,
             mod_license            : mod_license,
             mod_version            : modVersion,
-            layeredslopes_version  : project.layeredslopes_version,
+            layeredslopes_version  : effectiveLayeredSlopesVersion,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
