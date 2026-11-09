@@ -145,15 +145,16 @@ def main():
     finally:
         stop_server(process, log, 25575)
 
-    old_world = old_game_dir / 'saves' / LEVEL_NAME
+    # A dedicated server's world directory is <gameDir>/<level-name> directly -- unlike a
+    # singleplayer client, there is no intermediate "saves/" folder.
+    old_world = old_game_dir / LEVEL_NAME
     if not old_world.exists():
         raise RuntimeError(f"pre-split world was never saved at {old_world}")
 
     new_game_dir = new_dir / 'run'
     write_server_properties(new_game_dir, 25566, 25576)
-    saves_dir = new_game_dir / 'saves'
-    saves_dir.mkdir(parents=True, exist_ok=True)
-    target_world = saves_dir / LEVEL_NAME
+    new_game_dir.mkdir(parents=True, exist_ok=True)
+    target_world = new_game_dir / LEVEL_NAME
     if target_world.exists():
         raise RuntimeError(f"refusing to reuse an existing world at {target_world}")
     subprocess.run(['cp', '-r', str(old_world), str(target_world)], check=True)
