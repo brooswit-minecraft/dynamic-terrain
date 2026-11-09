@@ -1,5 +1,7 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.LayerMath;
+
 /**
  * The pure decision for one column of worldgen smoothing, free of Minecraft types (mirrors the
  * {@link SmoothRules}/{@link Smoothing} split). {@link SmoothSurfaceFeature} reads the real blocks at a

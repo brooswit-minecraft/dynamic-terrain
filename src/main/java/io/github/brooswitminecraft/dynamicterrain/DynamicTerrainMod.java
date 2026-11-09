@@ -1,5 +1,16 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_DIRT;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_GRASS;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_STONE;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_COBBLESTONE;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_SMOOTH_STONE;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_COBBLED_DEEPSLATE;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_COARSE_DIRT;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_PODZOL;
+import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_MYCELIUM;
+
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -19,93 +30,81 @@ import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * Entry point and registry. Layered dirt, sand and gravel are the first layered blocks; more
- * materials, smooth(), transitions and erode() follow in later MINECRAFT-58 tickets.
+ * Entry point and registry. The layered block family itself now lives in the Layered Slopes
+ * mod (MINECRAFT-499); this class wires Dynamic Terrain's own worldgen smoothing, erosion,
+ * grading tool and driving-surface systems to that extracted block API via {@link LayeredMaterials}.
  */
 @Mod(DynamicTerrainMod.MODID)
 public class DynamicTerrainMod {
     public static final String MODID = "dynamicterrain";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
-    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, MODID);
 
     public static final DeferredHolder<Feature<?>, SmoothSurfaceFeature> SMOOTH_SURFACE =
             FEATURES.register("smooth_surface", () -> new SmoothSurfaceFeature(NoneFeatureConfiguration.CODEC));
 
-    public static final DeferredBlock<LayeredBlock> LAYERED_DIRT = registerLayered("layered_dirt", Blocks.DIRT);
-    public static final DeferredBlock<LayeredBlock> LAYERED_SAND = registerLayered("layered_sand", Blocks.SAND);
-    public static final DeferredBlock<LayeredBlock> LAYERED_GRAVEL = registerLayered("layered_gravel", Blocks.GRAVEL);
-
-    public static final DeferredBlock<LayeredBlock> LAYERED_STONE = registerLayered("layered_stone", Blocks.STONE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_COBBLESTONE = registerLayered("layered_cobblestone", Blocks.COBBLESTONE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_SMOOTH_STONE = registerLayered("layered_smooth_stone", Blocks.SMOOTH_STONE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_DEEPSLATE = registerLayered("layered_deepslate", Blocks.DEEPSLATE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_COBBLED_DEEPSLATE = registerLayered("layered_cobbled_deepslate", Blocks.COBBLED_DEEPSLATE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_TERRACOTTA = registerLayered("layered_terracotta", Blocks.TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_RED_TERRACOTTA = registerLayered("layered_red_terracotta", Blocks.RED_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_ORANGE_TERRACOTTA = registerLayered("layered_orange_terracotta", Blocks.ORANGE_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_YELLOW_TERRACOTTA = registerLayered("layered_yellow_terracotta", Blocks.YELLOW_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_BROWN_TERRACOTTA = registerLayered("layered_brown_terracotta", Blocks.BROWN_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_WHITE_TERRACOTTA = registerLayered("layered_white_terracotta", Blocks.WHITE_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_LIGHT_GRAY_TERRACOTTA = registerLayered("layered_light_gray_terracotta", Blocks.LIGHT_GRAY_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_MAGENTA_TERRACOTTA = registerLayered("layered_magenta_terracotta", Blocks.MAGENTA_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_LIGHT_BLUE_TERRACOTTA = registerLayered("layered_light_blue_terracotta", Blocks.LIGHT_BLUE_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_LIME_TERRACOTTA = registerLayered("layered_lime_terracotta", Blocks.LIME_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_PINK_TERRACOTTA = registerLayered("layered_pink_terracotta", Blocks.PINK_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_GRAY_TERRACOTTA = registerLayered("layered_gray_terracotta", Blocks.GRAY_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_CYAN_TERRACOTTA = registerLayered("layered_cyan_terracotta", Blocks.CYAN_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_PURPLE_TERRACOTTA = registerLayered("layered_purple_terracotta", Blocks.PURPLE_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_BLUE_TERRACOTTA = registerLayered("layered_blue_terracotta", Blocks.BLUE_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_GREEN_TERRACOTTA = registerLayered("layered_green_terracotta", Blocks.GREEN_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_BLACK_TERRACOTTA = registerLayered("layered_black_terracotta", Blocks.BLACK_TERRACOTTA);
-    public static final DeferredBlock<LayeredBlock> LAYERED_RED_SAND = registerLayered("layered_red_sand", Blocks.RED_SAND);
-    public static final DeferredBlock<LayeredBlock> LAYERED_ICE = registerLayered("layered_ice", Blocks.ICE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_PACKED_ICE = registerLayered("layered_packed_ice", Blocks.PACKED_ICE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_SNOW_BLOCK = registerLayered("layered_snow_block", Blocks.SNOW_BLOCK);
-    public static final DeferredBlock<LayeredBlock> LAYERED_COARSE_DIRT = registerLayered("layered_coarse_dirt", Blocks.COARSE_DIRT);
-    public static final DeferredBlock<LayeredBlock> LAYERED_PODZOL = registerLayered("layered_podzol", Blocks.PODZOL);
-    public static final DeferredBlock<LayeredBlock> LAYERED_MYCELIUM = registerLayered("layered_mycelium", Blocks.MYCELIUM);
-    public static final DeferredBlock<LayeredBlock> LAYERED_MUD = registerLayered("layered_mud", Blocks.MUD);
-    public static final DeferredBlock<LayeredBlock> LAYERED_CLAY = registerLayered("layered_clay", Blocks.CLAY);
-    public static final DeferredBlock<LayeredBlock> LAYERED_SANDSTONE = registerLayered("layered_sandstone", Blocks.SANDSTONE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_RED_SANDSTONE = registerLayered("layered_red_sandstone", Blocks.RED_SANDSTONE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_TUFF = registerLayered("layered_tuff", Blocks.TUFF);
-    public static final DeferredBlock<LayeredBlock> LAYERED_ANDESITE = registerLayered("layered_andesite", Blocks.ANDESITE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_GRANITE = registerLayered("layered_granite", Blocks.GRANITE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_DIORITE = registerLayered("layered_diorite", Blocks.DIORITE);
-    public static final DeferredBlock<LayeredBlock> LAYERED_NETHERRACK = registerLayered("layered_netherrack", Blocks.NETHERRACK);
-    public static final DeferredBlock<LayeredBlock> LAYERED_BLACKSTONE = registerLayered("layered_blackstone", Blocks.BLACKSTONE);
-
-    /** Grass keeps its grass top while graded: a pulled layer stays grass-topped on a slope. */
-    public static final DeferredBlock<LayeredBlock> LAYERED_GRASS = BLOCKS.registerBlock("layered_grass",
-            LayeredGrassBlock::new, BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).noOcclusion());
-
     static {
+        LayeredMaterials.register(Blocks.DIRT, LAYERED_DIRT);
+        LayeredMaterials.register(Blocks.SAND, LayeredSlopesMod.LAYERED_SAND);
+        LayeredMaterials.register(Blocks.GRAVEL, LayeredSlopesMod.LAYERED_GRAVEL);
+        LayeredMaterials.register(Blocks.STONE, LAYERED_STONE);
+        LayeredMaterials.register(Blocks.COBBLESTONE, LAYERED_COBBLESTONE);
+        LayeredMaterials.register(Blocks.SMOOTH_STONE, LAYERED_SMOOTH_STONE);
+        LayeredMaterials.register(Blocks.DEEPSLATE, LayeredSlopesMod.LAYERED_DEEPSLATE);
+        LayeredMaterials.register(Blocks.COBBLED_DEEPSLATE, LAYERED_COBBLED_DEEPSLATE);
+        LayeredMaterials.register(Blocks.TERRACOTTA, LayeredSlopesMod.LAYERED_TERRACOTTA);
+        LayeredMaterials.register(Blocks.RED_TERRACOTTA, LayeredSlopesMod.LAYERED_RED_TERRACOTTA);
+        LayeredMaterials.register(Blocks.ORANGE_TERRACOTTA, LayeredSlopesMod.LAYERED_ORANGE_TERRACOTTA);
+        LayeredMaterials.register(Blocks.YELLOW_TERRACOTTA, LayeredSlopesMod.LAYERED_YELLOW_TERRACOTTA);
+        LayeredMaterials.register(Blocks.BROWN_TERRACOTTA, LayeredSlopesMod.LAYERED_BROWN_TERRACOTTA);
+        LayeredMaterials.register(Blocks.WHITE_TERRACOTTA, LayeredSlopesMod.LAYERED_WHITE_TERRACOTTA);
+        LayeredMaterials.register(Blocks.LIGHT_GRAY_TERRACOTTA, LayeredSlopesMod.LAYERED_LIGHT_GRAY_TERRACOTTA);
+        LayeredMaterials.register(Blocks.MAGENTA_TERRACOTTA, LayeredSlopesMod.LAYERED_MAGENTA_TERRACOTTA);
+        LayeredMaterials.register(Blocks.LIGHT_BLUE_TERRACOTTA, LayeredSlopesMod.LAYERED_LIGHT_BLUE_TERRACOTTA);
+        LayeredMaterials.register(Blocks.LIME_TERRACOTTA, LayeredSlopesMod.LAYERED_LIME_TERRACOTTA);
+        LayeredMaterials.register(Blocks.PINK_TERRACOTTA, LayeredSlopesMod.LAYERED_PINK_TERRACOTTA);
+        LayeredMaterials.register(Blocks.GRAY_TERRACOTTA, LayeredSlopesMod.LAYERED_GRAY_TERRACOTTA);
+        LayeredMaterials.register(Blocks.CYAN_TERRACOTTA, LayeredSlopesMod.LAYERED_CYAN_TERRACOTTA);
+        LayeredMaterials.register(Blocks.PURPLE_TERRACOTTA, LayeredSlopesMod.LAYERED_PURPLE_TERRACOTTA);
+        LayeredMaterials.register(Blocks.BLUE_TERRACOTTA, LayeredSlopesMod.LAYERED_BLUE_TERRACOTTA);
+        LayeredMaterials.register(Blocks.GREEN_TERRACOTTA, LayeredSlopesMod.LAYERED_GREEN_TERRACOTTA);
+        LayeredMaterials.register(Blocks.BLACK_TERRACOTTA, LayeredSlopesMod.LAYERED_BLACK_TERRACOTTA);
+        LayeredMaterials.register(Blocks.RED_SAND, LayeredSlopesMod.LAYERED_RED_SAND);
+        LayeredMaterials.register(Blocks.ICE, LayeredSlopesMod.LAYERED_ICE);
+        LayeredMaterials.register(Blocks.PACKED_ICE, LayeredSlopesMod.LAYERED_PACKED_ICE);
+        LayeredMaterials.register(Blocks.SNOW_BLOCK, LayeredSlopesMod.LAYERED_SNOW_BLOCK);
+        LayeredMaterials.register(Blocks.COARSE_DIRT, LAYERED_COARSE_DIRT);
+        LayeredMaterials.register(Blocks.PODZOL, LAYERED_PODZOL);
+        LayeredMaterials.register(Blocks.MYCELIUM, LAYERED_MYCELIUM);
+        LayeredMaterials.register(Blocks.MUD, LayeredSlopesMod.LAYERED_MUD);
+        LayeredMaterials.register(Blocks.CLAY, LayeredSlopesMod.LAYERED_CLAY);
+        LayeredMaterials.register(Blocks.SANDSTONE, LayeredSlopesMod.LAYERED_SANDSTONE);
+        LayeredMaterials.register(Blocks.RED_SANDSTONE, LayeredSlopesMod.LAYERED_RED_SANDSTONE);
+        LayeredMaterials.register(Blocks.TUFF, LayeredSlopesMod.LAYERED_TUFF);
+        LayeredMaterials.register(Blocks.ANDESITE, LayeredSlopesMod.LAYERED_ANDESITE);
+        LayeredMaterials.register(Blocks.GRANITE, LayeredSlopesMod.LAYERED_GRANITE);
+        LayeredMaterials.register(Blocks.DIORITE, LayeredSlopesMod.LAYERED_DIORITE);
+        LayeredMaterials.register(Blocks.NETHERRACK, LayeredSlopesMod.LAYERED_NETHERRACK);
+        LayeredMaterials.register(Blocks.BLACKSTONE, LayeredSlopesMod.LAYERED_BLACKSTONE);
+
         LayeredMaterials.register(Blocks.GRASS_BLOCK, LAYERED_GRASS);
         // Soil blocks with a different top layer grade into plain layered dirt: the podzol or mycelium
         // top is lost with the first pull.
@@ -126,65 +125,10 @@ public class DynamicTerrainMod {
         LayeredMaterials.disturbsTo(LAYERED_GRASS, LAYERED_DIRT);
     }
 
-    private static final List<DeferredItem<BlockItem>> LAYERED_ITEMS = List.of(
-            ITEMS.registerSimpleBlockItem(LAYERED_DIRT),
-            ITEMS.registerSimpleBlockItem(LAYERED_GRASS),
-            ITEMS.registerSimpleBlockItem(LAYERED_STONE),
-            ITEMS.registerSimpleBlockItem(LAYERED_COBBLESTONE),
-            ITEMS.registerSimpleBlockItem(LAYERED_SMOOTH_STONE),
-            ITEMS.registerSimpleBlockItem(LAYERED_DEEPSLATE),
-            ITEMS.registerSimpleBlockItem(LAYERED_COBBLED_DEEPSLATE),
-            ITEMS.registerSimpleBlockItem(LAYERED_SAND),
-            ITEMS.registerSimpleBlockItem(LAYERED_GRAVEL),
-            ITEMS.registerSimpleBlockItem(LAYERED_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_RED_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_ORANGE_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_YELLOW_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_BROWN_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_WHITE_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_LIGHT_GRAY_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_MAGENTA_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_LIGHT_BLUE_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_LIME_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_PINK_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_GRAY_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_CYAN_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_PURPLE_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_BLUE_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_GREEN_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_BLACK_TERRACOTTA),
-            ITEMS.registerSimpleBlockItem(LAYERED_RED_SAND),
-            ITEMS.registerSimpleBlockItem(LAYERED_ICE),
-            ITEMS.registerSimpleBlockItem(LAYERED_PACKED_ICE),
-            ITEMS.registerSimpleBlockItem(LAYERED_SNOW_BLOCK),
-            ITEMS.registerSimpleBlockItem(LAYERED_COARSE_DIRT),
-            ITEMS.registerSimpleBlockItem(LAYERED_PODZOL),
-            ITEMS.registerSimpleBlockItem(LAYERED_MYCELIUM),
-            ITEMS.registerSimpleBlockItem(LAYERED_MUD),
-            ITEMS.registerSimpleBlockItem(LAYERED_CLAY),
-            ITEMS.registerSimpleBlockItem(LAYERED_SANDSTONE),
-            ITEMS.registerSimpleBlockItem(LAYERED_RED_SANDSTONE),
-            ITEMS.registerSimpleBlockItem(LAYERED_TUFF),
-            ITEMS.registerSimpleBlockItem(LAYERED_ANDESITE),
-            ITEMS.registerSimpleBlockItem(LAYERED_GRANITE),
-            ITEMS.registerSimpleBlockItem(LAYERED_DIORITE),
-            ITEMS.registerSimpleBlockItem(LAYERED_NETHERRACK),
-            ITEMS.registerSimpleBlockItem(LAYERED_BLACKSTONE));
-
-    private static DeferredBlock<LayeredBlock> registerLayered(String name, Block base) {
-        DeferredBlock<LayeredBlock> layered = BLOCKS.registerBlock(name, LayeredBlock::new,
-                BlockBehaviour.Properties.ofFullCopy(base).noOcclusion());
-        LayeredMaterials.register(base, layered);
-        return layered;
-    }
-
     public DynamicTerrainMod(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
         FEATURES.register(modEventBus);
-        BLOCKS.register(modEventBus);
-        ITEMS.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
-        modEventBus.addListener(this::addCreative);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(WaterErosion::onServerTick);
@@ -328,11 +272,5 @@ public class DynamicTerrainMod {
                                     changed ? "Applied " + name : "No-op: no '" + name + "' transition for that block"), true);
                             return changed ? 1 : 0;
                         }))));
-    }
-
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.NATURAL_BLOCKS) {
-            LAYERED_ITEMS.forEach(event::accept);
-        }
     }
 }

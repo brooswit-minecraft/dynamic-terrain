@@ -1,5 +1,7 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;

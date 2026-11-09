@@ -23,3 +23,13 @@ description='''Dynamic terrain, erosion and driving-surface physics for NeoForge
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+# Layered Slopes provides the layered block family this mod's smoothing/erosion/grading-tool/
+# cave-ins code operates on (MINECRAFT-499 extraction); required so a missing install fails
+# loudly at startup instead of silently losing layered-block behavior.
+[[dependencies.${mod_id}]]
+    modId="layeredslopes"
+    type="required"
+    versionRange="[${layeredslopes_version},)"
+    ordering="AFTER"
+    side="BOTH"

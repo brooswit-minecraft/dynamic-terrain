@@ -1,5 +1,10 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.Anchor;
+import io.github.brooswitminecraft.layeredslopes.LayerMath;
+import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
+import io.github.brooswitminecraft.layeredslopes.LayeredGrassBlock;
+
 import java.util.Optional;
 
 import net.minecraft.core.BlockPos;

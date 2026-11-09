@@ -25,6 +25,34 @@ how they respond.**
 Design source: Confluence space BROOSWITMINECRAFT, "Consulting from an
 Outsider — Dynamic Terrain, Erosion & Driving Surface Physics".
 
+## Layered Slopes dependency (MINECRAFT-499)
+
+The layered floor/ceiling block family (`LayeredBlock`/`LayeredGrassBlock`,
+`LayerMath`, `Anchor`) moved to its own mod,
+[Layered Slopes](https://github.com/brooswit-minecraft/layered-slopes), and
+is now a **required** dependency (`neoforge.mods.toml`,
+`compileOnly`+`runtimeOnly` on its release jar — see `build.gradle`'s
+`downloadLayeredSlopes` task): this mod's smoothing, erosion, cave-ins and
+grading-tool code consumes those classes via `LayeredMaterials`, but no
+longer registers the blocks itself. Every layered block/item kept its
+pre-split `dynamicterrain` registry name — Layered Slopes registers them
+under that namespace specifically for this — so an existing save with
+`dynamicterrain:layered_dirt` etc. placed keeps resolving once this mod is
+upgraded past the split **with Layered Slopes installed alongside it**.
+Grading tools, manual smoothing/terrain editing, world generation,
+erosion/cave-ins and driving-surface physics all stay here; only the block
+family itself moved.
+
+**Known pending step:** `gradle.properties`' `layeredslopes_version`/
+`layeredslopes_sha512` are still the MINECRAFT-499 placeholder
+(`UNRELEASED`) as of this PR — brooswit-minecraft/layered-slopes#1 (the
+real block-extraction release) has not been reviewed/merged/released yet;
+only its pre-extraction `v0.1.0` scaffold release exists, which must **not**
+be pinned here (it ships none of the moved classes). `downloadLayeredSlopes`
+fails loudly rather than silently building against a wrong or missing jar.
+This PR's build will go green once those two properties are filled in with
+the real release.
+
 ## Building
 
 Requires a JDK 21 with `javac` on `JAVA_HOME`.

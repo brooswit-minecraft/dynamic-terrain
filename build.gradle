@@ -22,7 +22,37 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // No additional repositories required for the empty scaffold.
+    // layered-slopes is not on a maven repository; fetched from its GitHub release, pinned by
+    // version and verified by sha512, same pattern Courier Craft uses for its own
+    // dynamic-vehicles dependency.
+    mavenCentral()
+}
+
+// layered-slopes provides the LayeredBlock/LayeredGrassBlock/LayerMath/Anchor classes this mod's
+// smoothing/erosion/grading-tool/cave-ins code consumes (see LayeredMaterials's registration in
+// DynamicTerrainMod). Required, not optional: unlike Courier Craft's optional dynamic-vehicles
+// integration, Dynamic Terrain cannot function without the real registered layered blocks, so
+// this goes on compileOnly AND runtimeOnly, and is declared "required" in neoforge.mods.toml.
+def layeredSlopesJar = layout.buildDirectory.file("layeredslopes/layeredslopes-${project.layeredslopes_version}.jar")
+tasks.register("downloadLayeredSlopes") {
+    outputs.file(layeredSlopesJar)
+    doLast {
+        if (project.layeredslopes_version == "UNRELEASED") {
+            throw new GradleException("layeredslopes_version/layeredslopes_sha512 in gradle.properties are still " +
+                    "the MINECRAFT-499 placeholder -- fill them in with the real brooswit-minecraft/layered-slopes " +
+                    "release (its block-extraction PR, not the pre-extraction v0.1.0 scaffold) before building.")
+        }
+        def target = layeredSlopesJar.get().asFile
+        target.parentFile.mkdirs()
+        def url = "https://github.com/brooswit-minecraft/layered-slopes/releases/download/v${project.layeredslopes_version}/layeredslopes-${project.layeredslopes_version}.jar"
+        new URL(url).withInputStream { input -> target.withOutputStream { it << input } }
+        def digest = java.security.MessageDigest.getInstance("SHA-512")
+        def actual = digest.digest(target.bytes).encodeHex().toString()
+        if (actual != project.layeredslopes_sha512) {
+            target.delete()
+            throw new GradleException("layered-slopes ${project.layeredslopes_version} sha512 mismatch: ${actual}")
+        }
+    }
 }
 
 base {
@@ -76,6 +106,9 @@ neoForge {
 }
 
 dependencies {
+    compileOnly files(layeredSlopesJar).builtBy(tasks.named("downloadLayeredSlopes"))
+    runtimeOnly files(layeredSlopesJar).builtBy(tasks.named("downloadLayeredSlopes"))
+
     testImplementation platform("org.junit:junit-bom:5.11.4")
     testImplementation "org.junit.jupiter:junit-jupiter"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
@@ -98,6 +131,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_name               : mod_name,
             mod_license            : mod_license,
             mod_version            : modVersion,
+            layeredslopes_version  : project.layeredslopes_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

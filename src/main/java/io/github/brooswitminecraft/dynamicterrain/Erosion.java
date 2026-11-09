@@ -1,5 +1,8 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.LayerMath;
+import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
