@@ -33,6 +33,14 @@ BLOCKS = [
     ("layered_sand", 6, 100, 0, 1),
 ]
 MARKER_POS = (0, 200, 0)
+# Vanilla's actual /setblock success feedback (SetBlockCommand -> "commands.setblock.success" ->
+# "Changed the block at %s"). RCON returns this exact text for a genuine success; a failed or
+# malformed command (including a conditional "execute if" whose inner command then errors) returns
+# some OTHER nonempty text, and a false "execute if" condition returns nothing at all. Checking for
+# this specific substring -- not just "response is nonempty" -- is what makes the oracle
+# fail-closed: a review finding (DT PR #41, 2026-11-09T23:49:10Z) correctly caught that the
+# previous "nonempty means success" check would silently accept an RCON error as a pass.
+SUCCESS_MARKER = "Changed the block at"
 
 
 def rcon(host, port, password, *commands):
@@ -137,9 +145,10 @@ def main():
         for name, x, y, z, layers in BLOCKS:
             response = rcon('127.0.0.1', 25575, RCON_PASSWORD,
                              f"setblock {x} {y} {z} dynamicterrain:{name}[layers={layers}]")[0]
-            if not response.strip():
+            if SUCCESS_MARKER not in response:
                 raise RuntimeError(f"pre-split placement of dynamicterrain:{name}[layers={layers}] "
-                                    f"at ({x},{y},{z}) was not acknowledged by the old server")
+                                    f"at ({x},{y},{z}) was not acknowledged by the old server "
+                                    f"(RCON response: {response!r})")
         rcon('127.0.0.1', 25575, RCON_PASSWORD, "save-all flush")
         time.sleep(2)
     finally:
@@ -161,22 +170,37 @@ def main():
 
     process, log = run_server(new_dir, new_gradle_args, workdir / 'legacy-save-new-server.log')
     try:
-        results = []
-        for name, x, y, z, layers in BLOCKS:
+        def check(x, y, z, block_id, expected_layers):
             mx, my, mz = MARKER_POS
             rcon('127.0.0.1', 25576, RCON_PASSWORD, f"setblock {mx} {my} {mz} minecraft:air")
             response = rcon('127.0.0.1', 25576, RCON_PASSWORD,
-                             f"execute if block {x} {y} {z} dynamicterrain:{name}[layers={layers}] "
+                             f"execute if block {x} {y} {z} {block_id}[layers={expected_layers}] "
                              f"run setblock {mx} {my} {mz} minecraft:emerald_block")[0]
-            if not response.strip():
+            return SUCCESS_MARKER in response
+
+        # Self-check the oracle before trusting it: deliberately assert a WRONG layer count on an
+        # actually-seeded block and require that to be correctly rejected (John's review,
+        # 2026-11-09T23:49:10Z: "negative case must deliberately change/remove expected saved
+        # block and fail"). This is the oracle validating itself, not the mod under test.
+        neg_name, neg_x, neg_y, neg_z, neg_layers = BLOCKS[0]
+        wrong_layers = neg_layers + 1 if neg_layers < 16 else neg_layers - 1
+        if check(neg_x, neg_y, neg_z, f"dynamicterrain:{neg_name}", wrong_layers):
+            raise RuntimeError(
+                f"oracle self-check failed: asserting dynamicterrain:{neg_name}[layers={wrong_layers}] "
+                f"at ({neg_x},{neg_y},{neg_z}) (actual saved layers={neg_layers}) was incorrectly "
+                f"reported as a match -- the success-marker check is still fail-open")
+
+        results = []
+        for name, x, y, z, layers in BLOCKS:
+            if not check(x, y, z, f"dynamicterrain:{name}", layers):
                 raise RuntimeError(
                     f"legacy block/layers lost across the split at ({x},{y},{z}): expected "
                     f"dynamicterrain:{name}[layers={layers}] to still resolve after reopening the "
                     f"pre-split save with the split pair, but the state no longer matches")
             results.append({"pos": [x, y, z], "block": f"dynamicterrain:{name}", "layers": layers})
         Path('legacy-save-acceptance-result.json').write_text(
-            json.dumps({"passed": True, "blocks": results}, indent=2))
-        print(json.dumps({"passed": True, "blocks": len(results)}))
+            json.dumps({"passed": True, "blocks": results, "negative_case_verified": True}, indent=2))
+        print(json.dumps({"passed": True, "blocks": len(results), "negative_case_verified": True}))
     finally:
         stop_server(process, log, 25576)
 
