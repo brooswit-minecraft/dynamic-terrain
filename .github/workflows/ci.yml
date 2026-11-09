@@ -47,6 +47,16 @@ jobs:
       - name: Build and test (against paired Layered Slopes PR artifact)
         run: ./gradlew build --no-daemon -PlayeredslopesLocalJar=layered-slopes-paired/build/libs/layeredslopes-0.0.0.jar
 
+      # MINECRAFT-499 / Wroosbit review 52656: coinstalled runtime proof, not just compile-time,
+      # that this mod actually boots together with Layered Slopes. Gradle reports BUILD SUCCESSFUL
+      # even when the GameTest server fails to start or ran zero tests, so check_gametest_count.py
+      # fails closed unless the exact expected count of named tests actually ran and passed.
+      - name: Run GameTests (coinstalled with paired Layered Slopes PR artifact)
+        run: |
+          set -o pipefail
+          ./gradlew runGameTestServer --no-daemon -PlayeredslopesLocalJar=layered-slopes-paired/build/libs/layeredslopes-0.0.0.jar 2>&1 | tee gametest.log
+          python3 scripts/check_gametest_count.py gametest.log
+
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:
