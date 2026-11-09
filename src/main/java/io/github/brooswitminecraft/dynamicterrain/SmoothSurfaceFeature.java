@@ -51,7 +51,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * block the usual height scan stops on. Once discovered, smoothing can
  * thicken or thin it exactly like any other material, directly in its own
  * cell, so the result always sits flush with whatever is solid beneath it —
- * resolved to {@link DynamicTerrainMod#LAYERED_SNOW_BLOCK} directly here
+ * resolved to {@link LayeredSlopesMod#LAYERED_SNOW_BLOCK} directly here
  * rather than through {@link LayeredMaterials}, so this stays a worldgen-only
  * behaviour and does not also make thin snow erodible or hand-gradable like a
  * registered material would. The one place that needs its own case is a
