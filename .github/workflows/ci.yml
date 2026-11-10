@@ -27,34 +27,20 @@ jobs:
       - name: Check the mod does not require a newer NeoForge than the pack runs
         run: python3 scripts/check_neoforge_floor.py
 
-      # MINECRAFT-499: layered-slopes has no public release yet (only its pre-extraction v0.1.0
-      # scaffold, which must never be pinned here). Review comment 52571 explicitly authorizes
-      # paired hosted validation against the exact paired PR commit before a release exists, while
-      # keeping gradle.properties' real version+sha512 pin fail-closed for actual shipped
-      # consumers (see build.gradle's downloadLayeredSlopes). Remove this paired-checkout step and
-      # drop -PlayeredslopesLocalJar once that PR merges and releases and gradle.properties is
-      # updated to the real pin.
-      - name: Checkout paired Layered Slopes PR (MINECRAFT-499 integration validation)
-        uses: actions/checkout@v4
-        with:
-          repository: brooswit-minecraft/layered-slopes
-          ref: minecraft-499-extract-layered-blocks
-          path: layered-slopes-paired
-
-      - name: Build paired Layered Slopes
-        run: cd layered-slopes-paired && ./gradlew build --no-daemon
-
-      - name: Build and test (against paired Layered Slopes PR artifact)
-        run: ./gradlew build --no-daemon -PlayeredslopesLocalJar=layered-slopes-paired/build/libs/layeredslopes-0.0.0.jar
+      # MINECRAFT-499: layered-slopes#1 merged and released as v0.2.0; gradle.properties now pins
+      # the real version+sha512, so downloadLayeredSlopes fetches the real release artifact and no
+      # paired-PR checkout/local-jar override is needed any more.
+      - name: Build and test
+        run: ./gradlew build --no-daemon
 
       # MINECRAFT-499 / Wroosbit review 52656: coinstalled runtime proof, not just compile-time,
       # that this mod actually boots together with Layered Slopes. Gradle reports BUILD SUCCESSFUL
       # even when the GameTest server fails to start or ran zero tests, so check_gametest_count.py
       # fails closed unless the exact expected count of named tests actually ran and passed.
-      - name: Run GameTests (coinstalled with paired Layered Slopes PR artifact)
+      - name: Run GameTests (coinstalled with Layered Slopes)
         run: |
           set -o pipefail
-          ./gradlew runGameTestServer --no-daemon -PlayeredslopesLocalJar=layered-slopes-paired/build/libs/layeredslopes-0.0.0.jar 2>&1 | tee gametest.log
+          ./gradlew runGameTestServer --no-daemon 2>&1 | tee gametest.log
           python3 scripts/check_gametest_count.py gametest.log
 
       - name: Upload mod jar
@@ -90,16 +76,6 @@ jobs:
           java-version: "21"
           cache: gradle
 
-      - name: Checkout paired Layered Slopes PR (MINECRAFT-499 integration validation)
-        uses: actions/checkout@v4
-        with:
-          repository: brooswit-minecraft/layered-slopes
-          ref: minecraft-499-extract-layered-blocks
-          path: layered-slopes-paired
-
-      - name: Build paired Layered Slopes
-        run: cd layered-slopes-paired && ./gradlew build --no-daemon
-
       - name: Checkout pre-extraction Dynamic Terrain as a separate worktree
         run: |
           git fetch origin main
@@ -108,9 +84,7 @@ jobs:
           git worktree add ../old-dt "$BASE"
 
       - name: Run legacy save/reload acceptance
-        run: |
-          python3 tools/legacy-save/legacy_save_acceptance.py ../old-dt . \
-            -PlayeredslopesLocalJar=layered-slopes-paired/build/libs/layeredslopes-0.0.0.jar
+        run: python3 tools/legacy-save/legacy_save_acceptance.py ../old-dt .
 
       - name: Preserve legacy save acceptance evidence
         if: always()
