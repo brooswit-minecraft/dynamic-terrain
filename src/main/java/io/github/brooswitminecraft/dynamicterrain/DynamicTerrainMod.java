@@ -47,7 +47,6 @@ public class DynamicTerrainMod {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
         modEventBus.addListener(this::commonSetup);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-        NeoForge.EVENT_BUS.addListener(WaterErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(EntityErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(HeatErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(CaveIns::onNeighborNotify);
@@ -136,19 +135,6 @@ public class DynamicTerrainMod {
             }));
         }
         event.getDispatcher().register(textureRoot.then(texturePos));
-
-        // Debug entry point for water erosion: /dtwater <pos> <samples> samples positions around pos once.
-        event.getDispatcher().register(Commands.literal("dtwater")
-                .requires(source -> source.hasPermission(2))
-                .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                        .then(Commands.argument("samples", IntegerArgumentType.integer(1, 100000)).executes(context -> {
-                            BlockPos center = BlockPosArgument.getLoadedBlockPos(context, "pos");
-                            int samples = IntegerArgumentType.getInteger(context, "samples");
-                            int changed = WaterErosion.sampleAround(context.getSource().getLevel(), center, samples,
-                                    context.getSource().getLevel().getRandom());
-                            context.getSource().sendSuccess(() -> Component.literal("water erosion changed " + changed + " blocks"), true);
-                            return changed;
-                        }))));
 
         // Debug entry point for heat erosion: /dtheat <pos> <samples> samples positions around pos once.
         event.getDispatcher().register(Commands.literal("dtheat")
