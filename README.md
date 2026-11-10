@@ -4,8 +4,10 @@ Dynamic terrain, erosion and driving-surface physics for Minecraft
 (NeoForge 1.21.1, Java 21). Mod ID: `dynamicterrain`. MIT licensed.
 
 **Current state:** consumes the extracted Layered Slopes block family (see
-below); `smooth(direction)`, the transition registry and `erode(amount)`
-come next (epic MINECRAFT-58).
+below) and implements `Smoothing.smooth(direction)` and
+`Erosion.erode(amount)`, the material transition registry, the grading
+tool, and cave-ins (epic MINECRAFT-58). Driving-surface physics is not yet
+implemented.
 
 ## Architecture principle
 
