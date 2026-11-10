@@ -6,7 +6,6 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class DynamicTerrainConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue EROSION_ENABLED;
-    public static final ModConfigSpec.BooleanValue WORLDGEN_SMOOTHING;
     public static final ModConfigSpec.BooleanValue CAVE_INS_ENABLED;
     public static final ModConfigSpec.IntValue WATER_SAMPLES_PER_SECOND;
     public static final ModConfigSpec.BooleanValue ENTITY_EROSION;
@@ -33,10 +32,6 @@ public final class DynamicTerrainConfig {
         CAVE_INS_ENABLED = builder
                 .comment("Let unsupported terrain blocks collapse (cave-ins): layered blocks fall under gravity like sand/gravel, other supported blocks break and drop. Separate from erosion. Existing worlds may collapse where terrain was never supported.")
                 .define("caveInsEnabled", false);
-        WORLDGEN_SMOOTHING = builder
-                .comment("Smooth newly generated overworld terrain with layered blocks (1-block steps become fractional ramps). "
-                        + "Existing chunks are never changed. At the border between old and new chunks the old side keeps its steps.")
-                .define("worldgenSmoothing", true);
         SPEC = builder.build();
     }
 

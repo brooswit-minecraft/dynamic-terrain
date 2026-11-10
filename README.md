@@ -6,8 +6,9 @@ Dynamic terrain, erosion and driving-surface physics for Minecraft
 **Current state:** consumes the extracted Layered Slopes block family (see
 below) and implements `Smoothing.smooth(direction)` and
 `Erosion.erode(amount)`, the material transition registry, the grading
-tool, and cave-ins (epic MINECRAFT-58). Driving-surface physics is not yet
-implemented.
+tool, and cave-ins (epic MINECRAFT-58). Automatic worldgen surface
+smoothing moved out to the standalone Smooth Slopes mod (see below).
+Driving-surface physics is not yet implemented.
 
 ## Architecture principle
 
@@ -34,16 +35,33 @@ The layered floor/ceiling block family (`LayeredBlock`/`LayeredGrassBlock`,
 [Layered Slopes](https://github.com/brooswit-minecraft/layered-slopes), and
 is now a **required** dependency (`neoforge.mods.toml`,
 `compileOnly`+`runtimeOnly` on its release jar — see `build.gradle`'s
-`downloadLayeredSlopes` task): this mod's smoothing, erosion, cave-ins and
-grading-tool code consumes those classes via `LayeredMaterials`, but no
-longer registers the blocks itself. Every layered block/item kept its
-pre-split `dynamicterrain` registry name — Layered Slopes registers them
-under that namespace specifically for this — so an existing save with
-`dynamicterrain:layered_dirt` etc. placed keeps resolving once this mod is
-upgraded past the split **with Layered Slopes installed alongside it**.
-Grading tools, manual smoothing/terrain editing, world generation,
-erosion/cave-ins and driving-surface physics all stay here; only the block
-family itself moved.
+`downloadLayeredSlopes` task): this mod's manual-smoothing (`Smoothing`/
+`SmoothRules`), erosion, cave-ins and grading-tool code consumes those
+classes via `LayeredMaterials`, but no longer registers the blocks itself.
+Every layered block/item kept its pre-split `dynamicterrain` registry
+name — Layered Slopes registers them under that namespace specifically for
+this — so an existing save with `dynamicterrain:layered_dirt` etc. placed
+keeps resolving once this mod is upgraded past the split **with Layered
+Slopes installed alongside it**. Grading tools, manual smoothing/terrain
+editing, erosion/cave-ins and driving-surface physics all stay here; only
+the block family itself moved here from this mod — and (see below)
+automatic worldgen smoothing moved out of it entirely.
+
+## Smooth Slopes split (MINECRAFT-500)
+
+Automatic worldgen surface smoothing (`SmoothSurfaceFeature`, the
+`worldgenSmoothing` config key, and the `smooth_surface` feature/
+configured-feature/placed-feature/biome-modifier resources) moved to its
+own mod, [Smooth Slopes](https://github.com/brooswit-minecraft/smooth-slopes),
+which depends on Layered Slopes directly and does **not** depend on this
+mod at all. This mod no longer registers or runs that feature. Manual
+grading (`/dtsmooth`, the grading tool), erosion, cave-ins and driving-
+surface physics are unaffected — only automatic newly-generated-chunk
+smoothing moved. Install Smooth Slopes alongside Layered Slopes to keep
+newly generated terrain smoothed; an existing `worldgenSmoothing = false`
+in `config/dynamicterrain-server.toml` is migrated forward as Smooth
+Slopes' own default on its first config write (see its own README), so an
+explicit opt-out here is not silently re-enabled by the split.
 
 **Required dependency, real release:** `gradle.properties` pins
 `layeredslopes_version=0.2.0` and that release's actual SHA-512.

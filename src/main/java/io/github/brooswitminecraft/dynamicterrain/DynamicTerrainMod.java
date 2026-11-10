@@ -40,26 +40,18 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * Entry point and registry. The layered block family itself now lives in the Layered Slopes
- * mod (MINECRAFT-499); this class wires Dynamic Terrain's own worldgen smoothing, erosion,
- * grading tool and driving-surface systems to that extracted block API via {@link LayeredMaterials}.
+ * mod (MINECRAFT-499); this class wires Dynamic Terrain's own erosion, grading tool and
+ * driving-surface systems to that extracted block API via {@link LayeredMaterials}. Worldgen
+ * smoothing itself moved to the standalone Smooth Slopes mod (MINECRAFT-500), which depends on
+ * Layered Slopes directly and no longer needs this mod at all.
  */
 @Mod(DynamicTerrainMod.MODID)
 public class DynamicTerrainMod {
     public static final String MODID = "dynamicterrain";
     public static final Logger LOGGER = LogUtils.getLogger();
-
-    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, MODID);
-
-    public static final DeferredHolder<Feature<?>, SmoothSurfaceFeature> SMOOTH_SURFACE =
-            FEATURES.register("smooth_surface", () -> new SmoothSurfaceFeature(NoneFeatureConfiguration.CODEC));
 
     static {
         LayeredMaterials.register(Blocks.DIRT, LAYERED_DIRT);
@@ -127,7 +119,6 @@ public class DynamicTerrainMod {
 
     public DynamicTerrainMod(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
-        FEATURES.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
         NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
