@@ -80,6 +80,47 @@ tasks.register("downloadLayeredSlopes") {
     }
 }
 
+// layered-slope-grading provides the Smoothing/LayeredMaterials classes Erosion.java consumes,
+// and the GradingTool/dtsmooth-command player interaction that used to live in this mod
+// (MINECRAFT-511 extraction). Required, not optional, same rationale as layered-slopes above:
+// this mod cannot function without the real Smoothing.smooth() mechanics, so this goes on
+// compileOnly AND runtimeOnly, and is declared "required" in neoforge.mods.toml.
+//
+// `-PlayeredslopeGradingLocalJar=<path>` overrides the release download with a locally built
+// jar, for paired-PR integration validation before layered-slope-grading has a public release
+// -- mirrors `-PlayeredslopesLocalJar` above exactly (MINECRAFT-499 review comment 52571's same
+// rationale applies here). Never used as a substitute for the real version+sha512 pin below once
+// that release exists.
+def localLayeredSlopeGradingJar = findProperty("layeredslopeGradingLocalJar")
+def layeredSlopeGradingJar = localLayeredSlopeGradingJar
+        ? layout.projectDirectory.file(localLayeredSlopeGradingJar as String)
+        : layout.buildDirectory.file("layeredslopegrading/layeredslopegrading-${project.layeredslopegrading_version}.jar")
+def effectiveLayeredSlopeGradingVersion = localLayeredSlopeGradingJar ? "0.0.0" : project.layeredslopegrading_version
+def pinnedLayeredSlopeGradingVersion = project.layeredslopegrading_version
+def pinnedLayeredSlopeGradingSha512 = project.layeredslopegrading_sha512
+tasks.register("downloadLayeredSlopeGrading") {
+    outputs.file(layeredSlopeGradingJar)
+    onlyIf { !localLayeredSlopeGradingJar }
+    doLast {
+        if (pinnedLayeredSlopeGradingVersion == "UNRELEASED") {
+            throw new GradleException("layeredslopegrading_version/layeredslopegrading_sha512 in gradle.properties are " +
+                    "still the MINECRAFT-511 placeholder -- fill them in with the real " +
+                    "brooswit-minecraft/layered-slope-grading release before building, or pass " +
+                    "-PlayeredslopeGradingLocalJar=<path> for paired-PR integration validation only.")
+        }
+        def target = layeredSlopeGradingJar.get().asFile
+        target.parentFile.mkdirs()
+        def url = "https://github.com/brooswit-minecraft/layered-slope-grading/releases/download/v${pinnedLayeredSlopeGradingVersion}/layeredslopegrading-${pinnedLayeredSlopeGradingVersion}.jar"
+        new URL(url).withInputStream { input -> target.withOutputStream { it << input } }
+        def digest = java.security.MessageDigest.getInstance("SHA-512")
+        def actual = digest.digest(target.bytes).encodeHex().toString()
+        if (actual != pinnedLayeredSlopeGradingSha512) {
+            target.delete()
+            throw new GradleException("layered-slope-grading ${pinnedLayeredSlopeGradingVersion} sha512 mismatch: ${actual}")
+        }
+    }
+}
+
 base {
     archivesName = mod_id
 }
@@ -133,6 +174,8 @@ neoForge {
 dependencies {
     compileOnly files(layeredSlopesJar).builtBy(tasks.named("downloadLayeredSlopes"))
     runtimeOnly files(layeredSlopesJar).builtBy(tasks.named("downloadLayeredSlopes"))
+    compileOnly files(layeredSlopeGradingJar).builtBy(tasks.named("downloadLayeredSlopeGrading"))
+    runtimeOnly files(layeredSlopeGradingJar).builtBy(tasks.named("downloadLayeredSlopeGrading"))
 
     testImplementation platform("org.junit:junit-bom:5.11.4")
     testImplementation "org.junit.jupiter:junit-jupiter"
@@ -157,6 +200,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_license            : mod_license,
             mod_version            : modVersion,
             layeredslopes_version  : effectiveLayeredSlopesVersion,
+            layeredslopegrading_version : effectiveLayeredSlopeGradingVersion,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

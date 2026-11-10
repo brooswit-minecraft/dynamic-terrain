@@ -1,6 +1,7 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
 import io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod;
+import io.github.brooswitminecraft.layeredslopegrading.LayeredMaterials;
 import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_DIRT;
 import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_GRASS;
 import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_STONE;
@@ -121,7 +122,6 @@ public class DynamicTerrainMod {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
         modEventBus.addListener(this::commonSetup);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-        NeoForge.EVENT_BUS.addListener(GradingTool::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(WaterErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(EntityErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(HeatErosion::onServerTick);
@@ -141,22 +141,8 @@ public class DynamicTerrainMod {
         LOGGER.info("Dynamic Terrain scaffold loaded");
     }
 
-    /** Debug entry point for smooth(): /dtsmooth <pos> <direction>. Op only; the grading tool comes later. */
+    /** Debug and misc commands. The /dtsmooth command moved to the Layered Slope Grading mod (MINECRAFT-511). */
     private void registerCommands(RegisterCommandsEvent event) {
-        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dtsmooth")
-                .requires(source -> source.hasPermission(2));
-        RequiredArgumentBuilder<CommandSourceStack, Coordinates> pos = Commands.argument("pos", BlockPosArgument.blockPos());
-        for (Direction direction : Direction.values()) {
-            pos.then(Commands.literal(direction.getName()).executes(context -> {
-                BlockPos target = BlockPosArgument.getLoadedBlockPos(context, "pos");
-                boolean moved = Smoothing.smooth(context.getSource().getLevel(), target, direction);
-                context.getSource().sendSuccess(() -> Component.literal(
-                        moved ? "Moved one layer " + direction.getName() : "Rejected: nothing moved"), true);
-                return moved ? 1 : 0;
-            }));
-        }
-        event.getDispatcher().register(root.then(pos));
-
         // Debug entry point for erode(): /dterode <pos> <amount>. Respects the erosionEnabled config.
         event.getDispatcher().register(Commands.literal("dterode")
                 .requires(source -> source.hasPermission(2))
