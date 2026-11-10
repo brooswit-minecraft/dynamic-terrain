@@ -49,9 +49,11 @@ family itself moved.
 `layeredslopes-0.2.0.jar` from
 [Layered Slopes' GitHub release](https://github.com/brooswit-minecraft/layered-slopes/releases/tag/v0.2.0)
 and verifies it against that pinned hash before every build, failing
-loudly on a mismatch or on a missing/placeholder pin. Install Layered
-Slopes 0.2.0+ alongside this mod; `neoforge.mods.toml` declares it as a
-required dependency so NeoForge refuses to load either without the other.
+loudly on a mismatch or on a missing/placeholder pin. The dependency is
+one-way: install Layered Slopes 0.2.0+ alongside this mod, since
+`neoforge.mods.toml` declares it as required and NeoForge refuses to load
+this mod without it — but Layered Slopes itself runs fully standalone and
+has no dependency on this mod (see its own README).
 
 **Automated evidence (hosted CI, `ci.yml`):**
 - `build`: compiles and tests against the real downloaded/verified Layered
