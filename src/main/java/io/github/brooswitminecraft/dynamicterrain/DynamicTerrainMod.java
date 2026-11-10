@@ -1,18 +1,6 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
-import io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod;
 import io.github.brooswitminecraft.layeredslopegrading.LayeredMaterials;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_DIRT;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_GRASS;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_STONE;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_COBBLESTONE;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_SMOOTH_STONE;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_COBBLED_DEEPSLATE;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_COARSE_DIRT;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_PODZOL;
-import static io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod.LAYERED_MYCELIUM;
-
-import java.util.List;
 
 import org.slf4j.Logger;
 
@@ -31,8 +19,6 @@ import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -43,80 +29,19 @@ import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
- * Entry point and registry. The layered block family itself now lives in the Layered Slopes
- * mod (MINECRAFT-499); this class wires Dynamic Terrain's own erosion, grading tool and
- * driving-surface systems to that extracted block API via {@link LayeredMaterials}. Worldgen
- * smoothing itself moved to the standalone Smooth Slopes mod (MINECRAFT-500), which depends on
- * Layered Slopes directly and no longer needs this mod at all.
+ * Entry point. The layered block family itself lives in the Layered Slopes mod (MINECRAFT-499);
+ * this class wires Dynamic Terrain's own erosion and driving-surface systems to that extracted
+ * block API via {@link LayeredMaterials}. Worldgen smoothing moved to the standalone Smooth
+ * Slopes mod (MINECRAFT-500); manual grading and the vanilla-block-to-layered-block
+ * {@code LayeredMaterials} registration itself moved to the standalone Layered Slope Grading mod
+ * (MINECRAFT-511, Jira comments 52878/52881) -- that mod now populates {@link LayeredMaterials}
+ * at its own class-load time via the required {@code layeredslopegrading} dependency, so this
+ * class no longer runs a duplicate copy of that registration.
  */
 @Mod(DynamicTerrainMod.MODID)
 public class DynamicTerrainMod {
     public static final String MODID = "dynamicterrain";
     public static final Logger LOGGER = LogUtils.getLogger();
-
-    static {
-        LayeredMaterials.register(Blocks.DIRT, LAYERED_DIRT);
-        LayeredMaterials.register(Blocks.SAND, LayeredSlopesMod.LAYERED_SAND);
-        LayeredMaterials.register(Blocks.GRAVEL, LayeredSlopesMod.LAYERED_GRAVEL);
-        LayeredMaterials.register(Blocks.STONE, LAYERED_STONE);
-        LayeredMaterials.register(Blocks.COBBLESTONE, LAYERED_COBBLESTONE);
-        LayeredMaterials.register(Blocks.SMOOTH_STONE, LAYERED_SMOOTH_STONE);
-        LayeredMaterials.register(Blocks.DEEPSLATE, LayeredSlopesMod.LAYERED_DEEPSLATE);
-        LayeredMaterials.register(Blocks.COBBLED_DEEPSLATE, LAYERED_COBBLED_DEEPSLATE);
-        LayeredMaterials.register(Blocks.TERRACOTTA, LayeredSlopesMod.LAYERED_TERRACOTTA);
-        LayeredMaterials.register(Blocks.RED_TERRACOTTA, LayeredSlopesMod.LAYERED_RED_TERRACOTTA);
-        LayeredMaterials.register(Blocks.ORANGE_TERRACOTTA, LayeredSlopesMod.LAYERED_ORANGE_TERRACOTTA);
-        LayeredMaterials.register(Blocks.YELLOW_TERRACOTTA, LayeredSlopesMod.LAYERED_YELLOW_TERRACOTTA);
-        LayeredMaterials.register(Blocks.BROWN_TERRACOTTA, LayeredSlopesMod.LAYERED_BROWN_TERRACOTTA);
-        LayeredMaterials.register(Blocks.WHITE_TERRACOTTA, LayeredSlopesMod.LAYERED_WHITE_TERRACOTTA);
-        LayeredMaterials.register(Blocks.LIGHT_GRAY_TERRACOTTA, LayeredSlopesMod.LAYERED_LIGHT_GRAY_TERRACOTTA);
-        LayeredMaterials.register(Blocks.MAGENTA_TERRACOTTA, LayeredSlopesMod.LAYERED_MAGENTA_TERRACOTTA);
-        LayeredMaterials.register(Blocks.LIGHT_BLUE_TERRACOTTA, LayeredSlopesMod.LAYERED_LIGHT_BLUE_TERRACOTTA);
-        LayeredMaterials.register(Blocks.LIME_TERRACOTTA, LayeredSlopesMod.LAYERED_LIME_TERRACOTTA);
-        LayeredMaterials.register(Blocks.PINK_TERRACOTTA, LayeredSlopesMod.LAYERED_PINK_TERRACOTTA);
-        LayeredMaterials.register(Blocks.GRAY_TERRACOTTA, LayeredSlopesMod.LAYERED_GRAY_TERRACOTTA);
-        LayeredMaterials.register(Blocks.CYAN_TERRACOTTA, LayeredSlopesMod.LAYERED_CYAN_TERRACOTTA);
-        LayeredMaterials.register(Blocks.PURPLE_TERRACOTTA, LayeredSlopesMod.LAYERED_PURPLE_TERRACOTTA);
-        LayeredMaterials.register(Blocks.BLUE_TERRACOTTA, LayeredSlopesMod.LAYERED_BLUE_TERRACOTTA);
-        LayeredMaterials.register(Blocks.GREEN_TERRACOTTA, LayeredSlopesMod.LAYERED_GREEN_TERRACOTTA);
-        LayeredMaterials.register(Blocks.BLACK_TERRACOTTA, LayeredSlopesMod.LAYERED_BLACK_TERRACOTTA);
-        LayeredMaterials.register(Blocks.RED_SAND, LayeredSlopesMod.LAYERED_RED_SAND);
-        LayeredMaterials.register(Blocks.ICE, LayeredSlopesMod.LAYERED_ICE);
-        LayeredMaterials.register(Blocks.PACKED_ICE, LayeredSlopesMod.LAYERED_PACKED_ICE);
-        LayeredMaterials.register(Blocks.SNOW_BLOCK, LayeredSlopesMod.LAYERED_SNOW_BLOCK);
-        LayeredMaterials.register(Blocks.COARSE_DIRT, LAYERED_COARSE_DIRT);
-        LayeredMaterials.register(Blocks.PODZOL, LAYERED_PODZOL);
-        LayeredMaterials.register(Blocks.MYCELIUM, LAYERED_MYCELIUM);
-        LayeredMaterials.register(Blocks.MUD, LayeredSlopesMod.LAYERED_MUD);
-        LayeredMaterials.register(Blocks.CLAY, LayeredSlopesMod.LAYERED_CLAY);
-        LayeredMaterials.register(Blocks.SANDSTONE, LayeredSlopesMod.LAYERED_SANDSTONE);
-        LayeredMaterials.register(Blocks.RED_SANDSTONE, LayeredSlopesMod.LAYERED_RED_SANDSTONE);
-        LayeredMaterials.register(Blocks.TUFF, LayeredSlopesMod.LAYERED_TUFF);
-        LayeredMaterials.register(Blocks.ANDESITE, LayeredSlopesMod.LAYERED_ANDESITE);
-        LayeredMaterials.register(Blocks.GRANITE, LayeredSlopesMod.LAYERED_GRANITE);
-        LayeredMaterials.register(Blocks.DIORITE, LayeredSlopesMod.LAYERED_DIORITE);
-        LayeredMaterials.register(Blocks.NETHERRACK, LayeredSlopesMod.LAYERED_NETHERRACK);
-        LayeredMaterials.register(Blocks.BLACKSTONE, LayeredSlopesMod.LAYERED_BLACKSTONE);
-
-        LayeredMaterials.register(Blocks.GRASS_BLOCK, LAYERED_GRASS);
-        // Soil blocks with a different top layer grade into plain layered dirt: the podzol or mycelium
-        // top is lost with the first pull.
-        for (Block soil : List.of(Blocks.ROOTED_DIRT)) {
-            LayeredMaterials.register(soil, LAYERED_DIRT);
-        }
-        LayeredMaterials.registerSlab(Blocks.STONE_SLAB, LAYERED_STONE);
-        LayeredMaterials.registerSlab(Blocks.COBBLESTONE_SLAB, LAYERED_COBBLESTONE);
-        LayeredMaterials.registerSlab(Blocks.SMOOTH_STONE_SLAB, LAYERED_SMOOTH_STONE);
-        LayeredMaterials.registerSlab(Blocks.COBBLED_DEEPSLATE_SLAB, LAYERED_COBBLED_DEEPSLATE);
-        LayeredMaterials.joinGroup("soil", LAYERED_DIRT);
-        LayeredMaterials.joinGroup("soil", LAYERED_GRASS);
-        LayeredMaterials.joinGroup("soil", LAYERED_COARSE_DIRT);
-        LayeredMaterials.joinGroup("soil", LAYERED_PODZOL);
-        LayeredMaterials.joinGroup("soil", LAYERED_MYCELIUM);
-        // Erosion disturbance settles grass as dirt instead of keeping a grass top
-        // (see Smoothing's disturb flag); manual grading above is unaffected.
-        LayeredMaterials.disturbsTo(LAYERED_GRASS, LAYERED_DIRT);
-    }
 
     public DynamicTerrainMod(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
