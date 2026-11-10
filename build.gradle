@@ -52,11 +52,16 @@ def layeredSlopesJar = localLayeredSlopesJar
 // ci.yml's paired build produces) is what's actually loaded, so the metadata must say that, not
 // the UNRELEASED placeholder.
 def effectiveLayeredSlopesVersion = localLayeredSlopesJar ? "0.0.0" : project.layeredslopes_version
+// Captured as plain values at configuration time: the configuration cache forbids
+// 'Task.project' (any project.* access) inside doLast at execution time -- this previously went
+// unnoticed because onlyIf{} always skipped the body while -PlayeredslopesLocalJar was in use.
+def pinnedLayeredSlopesVersion = project.layeredslopes_version
+def pinnedLayeredSlopesSha512 = project.layeredslopes_sha512
 tasks.register("downloadLayeredSlopes") {
     outputs.file(layeredSlopesJar)
     onlyIf { !localLayeredSlopesJar }
     doLast {
-        if (project.layeredslopes_version == "UNRELEASED") {
+        if (pinnedLayeredSlopesVersion == "UNRELEASED") {
             throw new GradleException("layeredslopes_version/layeredslopes_sha512 in gradle.properties are still " +
                     "the MINECRAFT-499 placeholder -- fill them in with the real brooswit-minecraft/layered-slopes " +
                     "release (its block-extraction PR, not the pre-extraction v0.1.0 scaffold) before building, " +
@@ -64,13 +69,13 @@ tasks.register("downloadLayeredSlopes") {
         }
         def target = layeredSlopesJar.get().asFile
         target.parentFile.mkdirs()
-        def url = "https://github.com/brooswit-minecraft/layered-slopes/releases/download/v${project.layeredslopes_version}/layeredslopes-${project.layeredslopes_version}.jar"
+        def url = "https://github.com/brooswit-minecraft/layered-slopes/releases/download/v${pinnedLayeredSlopesVersion}/layeredslopes-${pinnedLayeredSlopesVersion}.jar"
         new URL(url).withInputStream { input -> target.withOutputStream { it << input } }
         def digest = java.security.MessageDigest.getInstance("SHA-512")
         def actual = digest.digest(target.bytes).encodeHex().toString()
-        if (actual != project.layeredslopes_sha512) {
+        if (actual != pinnedLayeredSlopesSha512) {
             target.delete()
-            throw new GradleException("layered-slopes ${project.layeredslopes_version} sha512 mismatch: ${actual}")
+            throw new GradleException("layered-slopes ${pinnedLayeredSlopesVersion} sha512 mismatch: ${actual}")
         }
     }
 }
