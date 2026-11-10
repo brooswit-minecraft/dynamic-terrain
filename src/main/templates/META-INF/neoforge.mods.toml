@@ -33,3 +33,13 @@ description='''Dynamic terrain, erosion and surface smoothing for NeoForge 1.21.
     versionRange="[${layeredslopes_version},)"
     ordering="AFTER"
     side="BOTH"
+
+# Layered Slope Grading provides the manual grading tool and the Smoothing/LayeredMaterials
+# classes Erosion.java consumes (MINECRAFT-511 extraction); required so a missing install fails
+# loudly at startup instead of silently losing the grading tool and erosion's smoothing mechanics.
+[[dependencies.${mod_id}]]
+    modId="layeredslopegrading"
+    type="required"
+    versionRange="[${layeredslopegrading_version},)"
+    ordering="AFTER"
+    side="BOTH"

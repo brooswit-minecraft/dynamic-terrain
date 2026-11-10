@@ -2,6 +2,8 @@ package io.github.brooswitminecraft.dynamicterrain;
 
 import io.github.brooswitminecraft.layeredslopes.LayerMath;
 import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
+import io.github.brooswitminecraft.layeredslopegrading.LayeredMaterials;
+import io.github.brooswitminecraft.layeredslopegrading.Smoothing;
 
 import java.util.ArrayList;
 import java.util.Collections;
