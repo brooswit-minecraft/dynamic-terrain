@@ -1,5 +1,10 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.Anchor;
+import io.github.brooswitminecraft.layeredslopes.LayerMath;
+import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
+import io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +51,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * block the usual height scan stops on. Once discovered, smoothing can
  * thicken or thin it exactly like any other material, directly in its own
  * cell, so the result always sits flush with whatever is solid beneath it —
- * resolved to {@link DynamicTerrainMod#LAYERED_SNOW_BLOCK} directly here
+ * resolved to {@link LayeredSlopesMod#LAYERED_SNOW_BLOCK} directly here
  * rather than through {@link LayeredMaterials}, so this stays a worldgen-only
  * behaviour and does not also make thin snow erodible or hand-gradable like a
  * registered material would. The one place that needs its own case is a
@@ -201,7 +206,7 @@ public class SmoothSurfaceFeature extends Feature<NoneFeatureConfiguration> {
         // there would make every thin snow layer in already-generated worlds erodible/gradable too, well
         // beyond this worldgen-only fix.
         boolean isSnow = topState.is(Blocks.SNOW);
-        LayeredBlock layered = isSnow ? DynamicTerrainMod.LAYERED_SNOW_BLOCK.get() : LayeredMaterials.layeredFor(topState.getBlock());
+        LayeredBlock layered = isSnow ? LayeredSlopesMod.LAYERED_SNOW_BLOCK.get() : LayeredMaterials.layeredFor(topState.getBlock());
         SmoothColumnRules.TopKind kind = layered == null ? SmoothColumnRules.TopKind.NONE
                 : isSnow ? SmoothColumnRules.TopKind.SNOW
                 : topState.is(Blocks.GRASS_BLOCK) || topState.is(Blocks.MYCELIUM) || topState.is(Blocks.PODZOL) ? SmoothColumnRules.TopKind.GRASSY

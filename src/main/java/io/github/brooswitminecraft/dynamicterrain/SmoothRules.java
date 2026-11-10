@@ -1,5 +1,7 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.LayerMath;
+
 import java.util.Optional;
 
 /**

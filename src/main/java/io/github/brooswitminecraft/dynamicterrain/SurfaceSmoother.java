@@ -1,5 +1,7 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
+import io.github.brooswitminecraft.layeredslopes.LayerMath;
+
 /**
  * Pure math for worldgen smoothing. A column's natural surface is an integer
  * height S (the top of its highest solid block). The smoothed surface is a
