@@ -3,9 +3,9 @@
 Dynamic terrain, erosion and driving-surface physics for Minecraft
 (NeoForge 1.21.1, Java 21). Mod ID: `dynamicterrain`. MIT licensed.
 
-**Current state: scaffold only.** This repo ships an empty mod plus the
-Gradle project, CI and release gate. Layered blocks, `smooth(direction)`, the
-transition registry and `erode(amount)` come next (epic MINECRAFT-58).
+**Current state:** consumes the extracted Layered Slopes block family (see
+below); `smooth(direction)`, the transition registry and `erode(amount)`
+come next (epic MINECRAFT-58).
 
 ## Architecture principle
 
@@ -43,36 +43,40 @@ Grading tools, manual smoothing/terrain editing, world generation,
 erosion/cave-ins and driving-surface physics all stay here; only the block
 family itself moved.
 
-**Known pending step:** `gradle.properties`' `layeredslopes_version`/
-`layeredslopes_sha512` are still the MINECRAFT-499 placeholder
-(`UNRELEASED`) as of this PR — brooswit-minecraft/layered-slopes#1 (the
-real block-extraction release) has not been reviewed/merged/released yet;
-only its pre-extraction `v0.1.0` scaffold release exists, which must **not**
-be pinned here (it ships none of the moved classes). `downloadLayeredSlopes`
-fails loudly rather than silently building against a wrong or missing jar
-when that placeholder is still set.
+**Required dependency, real release:** `gradle.properties` pins
+`layeredslopes_version=0.2.0` and that release's actual SHA-512.
+`build.gradle`'s `downloadLayeredSlopes` task fetches
+`layeredslopes-0.2.0.jar` from
+[Layered Slopes' GitHub release](https://github.com/brooswit-minecraft/layered-slopes/releases/tag/v0.2.0)
+and verifies it against that pinned hash before every build, failing
+loudly on a mismatch or on a missing/placeholder pin. Install Layered
+Slopes 0.2.0+ alongside this mod; `neoforge.mods.toml` declares it as a
+required dependency so NeoForge refuses to load either without the other.
 
-**Paired-PR integration validation (temporary):** per review guidance, this
-PR's hosted CI checks out brooswit-minecraft/layered-slopes at its own
-`minecraft-499-extract-layered-blocks` branch, builds it, and builds this
-mod against that real jar via `-PlayeredslopesLocalJar=<path>` (see
-`ci.yml` and `build.gradle`) — proving this mod actually compiles against
-the extracted classes now, without pinning to the unrelated `v0.1.0`
-scaffold or waiting on a release. This is how the stale
-`ClientEvents`/`DynamicTerrainMod.LAYERED_GRASS` reference the review
-caught got caught: it no longer exists (the grass tint handler moved to
-Layered Slopes). The `-PlayeredslopesLocalJar` override and its paired
-checkout CI step are removed once layered-slopes#1 merges and releases and
-the real version+sha512 pin above is filled in; `downloadLayeredSlopes`
-becomes the normal build path again at that point.
+**Automated evidence (hosted CI, `ci.yml`):**
+- `build`: compiles and tests against the real downloaded/verified Layered
+  Slopes 0.2.0 jar, then runs `runGameTestServer` with both mods coinstalled
+  (`CoinstalledGameTests`) — proving `LayeredMaterials`' vanilla-block
+  lookups resolve to Layered Slopes' real registered blocks, and that a
+  placed `dynamicterrain:layered_dirt` is still tagged for `CaveIns` with
+  both mods actually loaded together, not just compiled together.
+- `legacy-save-acceptance`: boots the actual pre-extraction build (this
+  branch's merge-base with `main`) as a dedicated server, places
+  representative layered blocks, saves the world to disk; then boots this
+  mod's current head plus the real Layered Slopes release against that
+  same saved world and reads the blocks back over RCON — proving a
+  genuine legacy-world upgrade across the split, including a self-check
+  that a deliberately wrong assertion is correctly rejected
+  (`negative_case_verified`).
+- `release-gate`: the usual changelog-fragment/version gate.
 
-Not covered by this PR's automation, and not manually playtested: actual
-client/server mod-loader runtime (the paired CI step proves compile-time
-classloading only), standalone/coinstalled load, placement/stacking/
-drops/render/collision/pathfinding behavior in a running game, and
-legacy-world/save upgrade. Per review guidance, no GameTest/runtime
-harness is introduced here (neither this mod nor Layered Slopes has ever
-had one); that remains a bounded follow-up.
+**Remaining limitation, not automated:** manual in-game playtest (actual
+rendered frames, player-driven placement/collision feel) has not been
+performed. Everything else MINECRAFT-499 required — standalone/coinstalled
+load, client/server classloading and grass-tint rendering (see
+Layered Slopes' own README), legacy registry/state resolution, and a real
+save/reload upgrade across the split — has hosted, reproducible evidence
+per the jobs above.
 
 ## Building
 
