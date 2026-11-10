@@ -7,7 +7,6 @@ public final class DynamicTerrainConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue EROSION_ENABLED;
     public static final ModConfigSpec.BooleanValue CAVE_INS_ENABLED;
-    public static final ModConfigSpec.BooleanValue ENTITY_EROSION;
     public static final ModConfigSpec.BooleanValue VEHICLE_EROSION;
     public static final ModConfigSpec.IntValue HEAT_SAMPLES_PER_SECOND;
 
@@ -16,9 +15,6 @@ public final class DynamicTerrainConfig {
         EROSION_ENABLED = builder
                 .comment("Let erode() change terrain. When false, erode() does nothing. Manual tools still work.")
                 .define("erosionEnabled", false);
-        ENTITY_EROSION = builder
-                .comment("Let walking players and mobs wear the ground under them (mass x speed). Needs erosionEnabled.")
-                .define("entityErosion", true);
         VEHICLE_EROSION = builder
                 .comment("Let vehicle tires (TireSlip.report) change terrain even when erosionEnabled is false. Only what vehicles report is affected; heat and walking erosion stay off. "
                         + "Water erosion moved to the standalone Layered Slopes Flowing Fluids mod (MINECRAFT-513) and is no longer part of this mod at all.")

@@ -47,7 +47,6 @@ public class DynamicTerrainMod {
         modContainer.registerConfig(ModConfig.Type.SERVER, DynamicTerrainConfig.SPEC);
         modEventBus.addListener(this::commonSetup);
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
-        NeoForge.EVENT_BUS.addListener(EntityErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(HeatErosion::onServerTick);
         NeoForge.EVENT_BUS.addListener(CaveIns::onNeighborNotify);
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent event) -> event.addListener(new TransitionLoader()));
