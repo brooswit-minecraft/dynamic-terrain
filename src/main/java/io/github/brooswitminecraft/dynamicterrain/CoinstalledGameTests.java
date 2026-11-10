@@ -2,6 +2,7 @@ package io.github.brooswitminecraft.dynamicterrain;
 
 import io.github.brooswitminecraft.layeredslopes.LayeredBlock;
 import io.github.brooswitminecraft.layeredslopes.LayeredSlopesMod;
+import io.github.brooswitminecraft.layeredslopegrading.LayeredMaterials;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
