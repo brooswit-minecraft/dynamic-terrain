@@ -7,8 +7,9 @@ Dynamic terrain, erosion and driving-surface physics for Minecraft
 below) and implements `Smoothing.smooth(direction)` and
 `Erosion.erode(amount)`, the material transition registry, the grading
 tool, and cave-ins (epic MINECRAFT-58). Automatic worldgen surface
-smoothing moved out to the standalone Smooth Slopes mod (see below).
-Driving-surface physics is not yet implemented.
+smoothing moved out to the standalone Smooth Slopes mod, and entity
+footfall/landing erosion moved out to Layered Slope Dynamic Paths (see
+below). Driving-surface physics is not yet implemented.
 
 ## Architecture principle
 
@@ -62,6 +63,24 @@ newly generated terrain smoothed; an existing `worldgenSmoothing = false`
 in `config/dynamicterrain-server.toml` is migrated forward as Smooth
 Slopes' own default on its first config write (see its own README), so an
 explicit opt-out here is not silently re-enabled by the split.
+
+## Layered Slope Dynamic Paths split (MINECRAFT-512)
+
+Entity movement/landing erosion (`EntityErosion`, `EntityMath`, and the
+`entityErosion` config key) moved to its own mod,
+[Layered Slope Dynamic Paths](https://github.com/brooswit-minecraft/layered-slope-dynamic-paths),
+which depends on Layered Slopes directly and does **not** depend on this
+mod at all. This mod no longer registers or runs walking/landing footfall
+erosion. Manual grading, water/heat/vehicle erosion, cave-ins and driving-
+surface physics are unaffected — only entity-footfall-driven erosion
+moved. Install Layered Slope Dynamic Paths alongside Layered Slopes to
+keep mobs/players wearing down the ground they walk and land on; an
+existing `entityErosion = false` has no equivalent migration path here
+(the key is simply removed): set the new mod's own `walkErosion`/
+`landingErosion` config to `false` instead if you want that preference to
+carry forward. Upgrading this mod past this split and also installing
+Layered Slope Dynamic Paths does not double-erode: this mod no longer
+runs any footfall erosion of its own, by design.
 
 **Required dependency, real release:** `gradle.properties` pins
 `layeredslopes_version=0.2.0` and that release's actual SHA-512.
