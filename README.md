@@ -1,22 +1,32 @@
-# dynamic-terrain
+# legacy-dynamic-terrain
 
-In-game display name: **Legacy Dynamic Terrain** (MINECRAFT-556 naming
-normalization). GitHub repository rename to `legacy-dynamic-terrain` is
-staged but blocked pending org-admin access — see MINECRAFT-556; this repo
-is still at its original name/URL until that rename executes. The shipped
-mod ID, package, registry, config and networking namespaces are deliberately
-unchanged either way.
+Legacy Dynamic Terrain — repository and display name normalized from
+`dynamic-terrain` for naming consistency (MINECRAFT-556); GitHub repo
+rename to `legacy-dynamic-terrain` lands in a coordinated admin-rename
+window right after this PR merges. The shipped mod ID, package, registry,
+config and networking namespaces are deliberately unchanged — see
+Compatibility note below.
 
 Dynamic terrain, erosion and driving-surface physics for Minecraft
-(NeoForge 1.21.1, Java 21). Mod ID: `dynamicterrain` (unchanged). MIT licensed.
+(NeoForge 1.21.1, Java 21). Mod ID: `dynamicterrain` (unchanged; see
+Compatibility note). MIT licensed.
+
+## Compatibility note
+
+This repository and its GitHub display name changed; the shipped mod ID
+(`dynamicterrain`), Java package, config keys, registry/resource/data
+namespaces, migration checks and networking IDs did not. Existing worlds
+and modpacks keep recognizing this mod exactly as before — do not install
+this alongside any build still published under the old repository as a
+separate mod; they are the same mod.
 
 **Current state:** consumes the extracted Layered Slopes block family (see
 below) and implements `Smoothing.smooth(direction)` and
 `Erosion.erode(amount)`, the material transition registry, the grading
 tool, and cave-ins (epic MINECRAFT-58). Automatic worldgen surface
-smoothing moved out to the standalone Smooth Slopes mod, and entity
-footfall/landing erosion moved out to Layered Slope Dynamic Paths (see
-below). Driving-surface physics is not yet implemented.
+smoothing moved out to the standalone Layered Slopes Smooth Terrain mod, and
+entity footfall/landing erosion moved out to Layered Slopes Dynamic Paths
+(see below). Driving-surface physics is not yet implemented.
 
 ## Architecture principle
 
@@ -60,12 +70,13 @@ automatic worldgen smoothing moved out of it entirely.
 Automatic worldgen surface smoothing (`SmoothSurfaceFeature`, the
 `worldgenSmoothing` config key, and the `smooth_surface` feature/
 configured-feature/placed-feature/biome-modifier resources) moved to its
-own mod, [Smooth Slopes](https://github.com/brooswit-minecraft/smooth-slopes),
+own mod, [Layered Slopes Smooth Terrain](https://github.com/brooswit-minecraft/layered-slopes-smooth-terrain)
+(formerly Smooth Slopes),
 which depends on Layered Slopes directly and does **not** depend on this
 mod at all. This mod no longer registers or runs that feature. Manual
 grading (`/dtsmooth`, the grading tool), erosion, cave-ins and driving-
 surface physics are unaffected — only automatic newly-generated-chunk
-smoothing moved. Install Smooth Slopes alongside Layered Slopes to keep
+smoothing moved. Install Layered Slopes Smooth Terrain alongside Layered Slopes to keep
 newly generated terrain smoothed; an existing `worldgenSmoothing = false`
 in `config/dynamicterrain-server.toml` is migrated forward as Smooth
 Slopes' own default on its first config write (see its own README), so an
@@ -75,18 +86,19 @@ explicit opt-out here is not silently re-enabled by the split.
 
 Entity movement/landing erosion (`EntityErosion`, `EntityMath`, and the
 `entityErosion` config key) moved to its own mod,
-[Layered Slope Dynamic Paths](https://github.com/brooswit-minecraft/layered-slope-dynamic-paths),
+[Layered Slopes Dynamic Paths](https://github.com/brooswit-minecraft/layered-slopes-dynamic-paths)
+(formerly Layered Slope Dynamic Paths),
 which depends on Layered Slopes directly and does **not** depend on this
 mod at all. This mod no longer registers or runs walking/landing footfall
 erosion. Manual grading, water/heat/vehicle erosion, cave-ins and driving-
 surface physics are unaffected — only entity-footfall-driven erosion
-moved. Install Layered Slope Dynamic Paths alongside Layered Slopes to
+moved. Install Layered Slopes Dynamic Paths alongside Layered Slopes to
 keep mobs/players wearing down the ground they walk and land on; an
 existing `entityErosion = false` has no equivalent migration path here
 (the key is simply removed): set the new mod's own `walkErosion`/
 `landingErosion` config to `false` instead if you want that preference to
 carry forward. Upgrading this mod past this split and also installing
-Layered Slope Dynamic Paths does not double-erode: this mod no longer
+Layered Slopes Dynamic Paths does not double-erode: this mod no longer
 runs any footfall erosion of its own, by design.
 
 **Required dependency, real release:** `gradle.properties` pins
