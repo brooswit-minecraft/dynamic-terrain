@@ -1,7 +1,14 @@
 # dynamic-terrain
 
+In-game display name: **Legacy Dynamic Terrain** (MINECRAFT-556 naming
+normalization). GitHub repository rename to `legacy-dynamic-terrain` is
+staged but blocked pending org-admin access — see MINECRAFT-556; this repo
+is still at its original name/URL until that rename executes. The shipped
+mod ID, package, registry, config and networking namespaces are deliberately
+unchanged either way.
+
 Dynamic terrain, erosion and driving-surface physics for Minecraft
-(NeoForge 1.21.1, Java 21). Mod ID: `dynamicterrain`. MIT licensed.
+(NeoForge 1.21.1, Java 21). Mod ID: `dynamicterrain` (unchanged). MIT licensed.
 
 **Current state:** consumes the extracted Layered Slopes block family (see
 below) and implements `Smoothing.smooth(direction)` and
