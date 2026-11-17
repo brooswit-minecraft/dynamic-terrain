@@ -1,6 +1,7 @@
 package io.github.brooswitminecraft.dynamicterrain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,5 +29,12 @@ class MinecraftFiveFiveSixNamingTest {
         }
         assertEquals("dynamicterrain", props.getProperty("mod_id"));
         assertEquals("Legacy Dynamic Terrain", props.getProperty("mod_name"));
+    }
+
+    @Test
+    void settingsGradleRootProjectNameIsTheNormalizedName() throws IOException {
+        String settings = Files.readString(Path.of("settings.gradle"));
+        assertTrue(settings.contains("rootProject.name = \"legacy-dynamic-terrain\""),
+                "settings.gradle should set rootProject.name to legacy-dynamic-terrain");
     }
 }
